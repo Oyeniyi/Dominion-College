@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" role="img" aria-label="Co-Curricular and Student Life Placeholder">
+  <rect width="800" height="540" fill="#FAF8FC"/>
+  <rect x="32" y="32" width="736" height="476" rx="16" fill="#FFFFFF" stroke="#E2D9E8" stroke-width="2"/>
+  <circle cx="400" cy="220" r="96" fill="#D97706" opacity="0.1"/>
+  <!-- Shield & Star Motif -->
+  <path d="M400 145 L460 168 V222 C460 258 434 286 400 298 C366 286 340 258 340 222 V168 Z" fill="#5B1A69" opacity="0.9"/>
+  <polygon points="400,175 412,202 442,205 419,224 426,253 400,237 374,253 381,224 358,205 388,202" fill="#F59E0B"/>
+  <text x="400" y="365" text-anchor="middle" fill="#3B0F47" font-family="Georgia, serif" font-size="24" font-weight="700">
+    Co-Curricular &amp; Leadership Activities
+  </text>
+  <text x="400" y="400" text-anchor="middle" fill="#5B1A69" font-family="system-ui, sans-serif" font-size="14" font-weight="600" letter-spacing="1">
+    [PLACEHOLDER IMAGE — AWAITING APPROVED SCHOOL PHOTOGRAPH]
+  </text>
+</svg>
+

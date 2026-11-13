@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" role="img" aria-label="Science and Technology Laboratory Placeholder">
+  <rect width="800" height="540" fill="#F5ECF7"/>
+  <rect x="32" y="32" width="736" height="476" rx="16" fill="#FFFFFF" stroke="#E2D9E8" stroke-width="2"/>
+  <circle cx="400" cy="220" r="96" fill="#5B1A69" opacity="0.08"/>
+  <!-- Flask & Microscope Iconography -->
+  <path d="M370 140 H430 M385 140 V190 L345 265 C340 275 347 288 360 288 H440 C453 288 460 275 455 265 L415 190 V140" fill="none" stroke="#5B1A69" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M356 250 H444 L452 268 C455 275 449 282 438 282 H362 C351 282 345 275 348 268 Z" fill="#D97706" opacity="0.85"/>
+  <circle cx="390" cy="230" r="6" fill="#D97706"/>
+  <circle cx="412" cy="215" r="5" fill="#5B1A69"/>
+  <text x="400" y="365" text-anchor="middle" fill="#3B0F47" font-family="Georgia, serif" font-size="24" font-weight="700">
+    Science &amp; Practical Discovery
+  </text>
+  <text x="400" y="400" text-anchor="middle" fill="#5B1A69" font-family="system-ui, sans-serif" font-size="14" font-weight="600" letter-spacing="1">
+    [PLACEHOLDER IMAGE — AWAITING APPROVED SCHOOL PHOTOGRAPH]
+  </text>
+</svg>
+

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-label="School News Announcement Placeholder">
+  <defs>
+    <linearGradient id="newsBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B0F47"/>
+      <stop offset="100%" stop-color="#5B1A69"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#newsBg)"/>
+  <rect x="40" y="40" width="720" height="370" rx="14" fill="none" stroke="#F59E0B" stroke-width="2" opacity="0.45"/>
+  <circle cx="400" cy="185" r="54" fill="#F59E0B" opacity="0.18"/>
+  <rect x="364" y="152" width="72" height="66" rx="8" fill="none" stroke="#FEF3C7" stroke-width="4"/>
+  <line x1="378" y1="172" x2="422" y2="172" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>
+  <line x1="378" y1="188" x2="422" y2="188" stroke="#FEF3C7" stroke-width="3" stroke-linecap="round"/>
+  <line x1="378" y1="202" x2="408" y2="202" stroke="#FEF3C7" stroke-width="3" stroke-linecap="round"/>
+  <text x="400" y="295" text-anchor="middle" fill="#FFFFFF" font-family="Georgia, serif" font-size="24" font-weight="700">
+    Dominion College Official Update
+  </text>
+  <text x="400" y="332" text-anchor="middle" fill="#FEF3C7" font-family="system-ui, sans-serif" font-size="13" font-weight="600" letter-spacing="1.2">
+    PLACEHOLDER BANNER — OFFICIAL NEWS &amp; ANNOUNCEMENTS
+  </text>
+</svg>
+

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-label="Dominion College Campus Illustration Placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B0F47"/>
+      <stop offset="55%" stop-color="#5B1A69"/>
+      <stop offset="100%" stop-color="#7A288C"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="1020" cy="140" r="180" fill="#F59E0B" opacity="0.12"/>
+  <circle cx="180" cy="600" r="240" fill="#FFFFFF" opacity="0.05"/>
+  <!-- Architectural Academic Building Silhouette -->
+  <g transform="translate(180, 210)">
+    <rect x="80" y="140" width="680" height="240" rx="8" fill="#FFFFFF" opacity="0.14" stroke="#F59E0B" stroke-width="2"/>
+    <polygon points="420,30 40,140 800,140" fill="url(#gold)" opacity="0.88"/>
+    <rect x="330" y="190" width="180" height="190" rx="6" fill="#3B0F47" opacity="0.65" stroke="#F59E0B" stroke-width="2"/>
+    <!-- Columns -->
+    <rect x="130" y="170" width="28" height="180" rx="4" fill="#FAF8FC" opacity="0.7"/>
+    <rect x="200" y="170" width="28" height="180" rx="4" fill="#FAF8FC" opacity="0.7"/>
+    <rect x="270" y="170" width="28" height="180" rx="4" fill="#FAF8FC" opacity="0.7"/>
+    <rect x="542" y="170" width="28" height="180" rx="4" fill="#FAF8FC" opacity="0.7"/>
+    <rect x="612" y="170" width="28" height="180" rx="4" fill="#FAF8FC" opacity="0.7"/>
+    <rect x="682" y="170" width="28" height="180" rx="4" fill="#FAF8FC" opacity="0.7"/>
+    <!-- Torch motif -->
+    <circle cx="420" cy="95" r="24" fill="#3B0F47"/>
+    <path d="M420 75 C428 86, 432 95, 420 108 C408 95, 412 86, 420 75 Z" fill="#FEF3C7"/>
+  </g>
+  <rect x="280" y="615" width="640" height="44" rx="22" fill="#3B0F47" opacity="0.85" stroke="#F59E0B" stroke-width="1.5"/>
+  <text x="600" y="643" text-anchor="middle" fill="#FEF3C7" font-family="system-ui, sans-serif" font-size="16" font-weight="600" letter-spacing="1.5">
+    PLACEHOLDER VISUAL — DOMINIONS CAMPUS ARCHITECTURE
+  </text>
+</svg>
+

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 540" role="img" aria-label="Classroom Learning Environment Placeholder">
+  <rect width="800" height="540" fill="#F5ECF7"/>
+  <rect x="32" y="32" width="736" height="476" rx="16" fill="#FFFFFF" stroke="#E2D9E8" stroke-width="2"/>
+  <circle cx="400" cy="220" r="96" fill="#5B1A69" opacity="0.08"/>
+  <!-- Graduation Cap & Scroll -->
+  <polygon points="400,155 315,195 400,235 485,195" fill="#5B1A69"/>
+  <path d="M345 212 V255 C345 270 370 282 400 282 C430 282 455 270 455 255 V212" fill="none" stroke="#5B1A69" stroke-width="6"/>
+  <line x1="475" y1="200" x2="475" y2="260" stroke="#D97706" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="475" cy="264" r="6" fill="#D97706"/>
+  <text x="400" y="365" text-anchor="middle" fill="#3B0F47" font-family="Georgia, serif" font-size="24" font-weight="700">
+    Classroom &amp; Character Formation
+  </text>
+  <text x="400" y="400" text-anchor="middle" fill="#5B1A69" font-family="system-ui, sans-serif" font-size="14" font-weight="600" letter-spacing="1">
+    [PLACEHOLDER IMAGE — AWAITING APPROVED SCHOOL PHOTOGRAPH]
+  </text>
+</svg>
+
