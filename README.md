@@ -41,6 +41,20 @@ Official public website and protected content-management dashboard for **Dominio
    npm run dev
    ```
 
+## Docker Deployment
+
+The repository includes a multi-stage [`Dockerfile`](./Dockerfile) (Node.js 24 Alpine with Next.js `standalone` output) and [`docker-compose.yml`](./docker-compose.yml) with persistent volumes for the SQLite database (`/app/data`) and uploaded gallery images (`/app/public/uploads`).
+
+1. Set a strong `SESSION_SECRET` (at least 32 characters) in `.env` or your shell environment:
+   ```bash
+   export SESSION_SECRET="replace-with-a-random-secret-of-at-least-32-characters"
+   ```
+2. Build and start the container:
+   ```bash
+   docker compose up -d --build
+   ```
+3. Open `http://localhost:3000` (and `/admin/login` for the staff dashboard).
+
 ## Authoritative Documentation
 
 - Product requirements: [`prd.md`](./prd.md)

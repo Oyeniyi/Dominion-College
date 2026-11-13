@@ -1,0 +1,28 @@
+services:
+  dominion-college:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dominion-college-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_PATH: /app/data/dominion_college.sqlite
+      MEDIA_STAGING_DIR: /app/data/staging-uploads
+      MEDIA_PUBLIC_DIR: /app/public/uploads
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set (at least 32 characters)}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-admin@dominioncollege.edu.ng}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-DominionAdmin!2026}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Dominion College Administrator}
+      SCHOOL_TIMEZONE: ${SCHOOL_TIMEZONE:-Africa/Lagos}
+    volumes:
+      - dominion_data:/app/data
+      - dominion_uploads:/app/public/uploads
+
+volumes:
+  dominion_data:
+  dominion_uploads:
+

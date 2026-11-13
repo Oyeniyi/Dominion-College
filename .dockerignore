@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+coverage
+.git
+.agents
+data
+public/uploads
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+
