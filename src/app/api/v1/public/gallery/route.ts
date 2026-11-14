@@ -11,8 +11,10 @@ export async function GET(req: NextRequest) {
     const album = req.nextUrl.searchParams.get('album');
     const cursor = req.nextUrl.searchParams.get('cursor');
     const limit = req.nextUrl.searchParams.get('limit');
-    const imagesResult = listPublishedGalleryImages({ albumSlugOrId: album, cursor, limit });
-    const albums = listPublishedAlbums();
+    const [imagesResult, albums] = await Promise.all([
+      listPublishedGalleryImages({ albumSlugOrId: album, cursor, limit }),
+      listPublishedAlbums(),
+    ]);
     return jsonResponse(
       {
         data: {

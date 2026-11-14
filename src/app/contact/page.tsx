@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     'Contact Dominion College in Oba-Ile, Akure, Ondo State, Nigeria. Find our campus location, office hours, and admissions enquiry channels.',
 };
 
-export default function ContactPage() {
-  const settings = getPublicSiteSettings();
+export default async function ContactPage() {
+  const settings = await getPublicSiteSettings();
   const whatsappUrl = buildWhatsAppClickToChatUrl(settings.whatsappNumber);
 
   return (

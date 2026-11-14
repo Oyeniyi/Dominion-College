@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
-    const users = listAdminUsers(user);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
+    const users = await listAdminUsers(user);
     return jsonResponse({ data: users, meta: { requestId } }, { status: 200, requestId });
   } catch (error) {
     return handleRouteError(error, req, requestId);
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const created = createAdminUser(user, body);
+    const created = await createAdminUser(user, body);
     logSecurityEvent({
       category: 'ADMIN_USER_CREATED',
       outcome: 'success',

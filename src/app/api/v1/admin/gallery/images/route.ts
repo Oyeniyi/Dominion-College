@@ -14,14 +14,16 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
     const albumId = req.nextUrl.searchParams.get('albumId');
     const status = req.nextUrl.searchParams.get('status');
     const cursor = req.nextUrl.searchParams.get('cursor');
     const limit = req.nextUrl.searchParams.get('limit');
 
-    const imagesResult = listAdminGalleryImages(user, { albumId, status, cursor, limit });
-    const albums = listAdminAlbums(user);
+    const [imagesResult, albums] = await Promise.all([
+      listAdminGalleryImages(user, { albumId, status, cursor, limit }),
+      listAdminAlbums(user),
+    ]);
     return jsonResponse(
       {
         data: {
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     const contentType = req.headers.get('content-type') ?? '';
 
     if (contentType.includes('multipart/form-data')) {
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
         displayOrder: Number(formData.get('displayOrder') ?? '0'),
       };
 
-      const created = uploadAdminGalleryImage(user, {
+      const created = await uploadAdminGalleryImage(user, {
         metadata,
         fileBuffer,
         placeholderUrl,
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
       fileBuffer = Buffer.from(body.fileBase64, 'base64');
     }
 
-    const created = uploadAdminGalleryImage(user, {
+    const created = await uploadAdminGalleryImage(user, {
       metadata: body,
       fileBuffer,
       placeholderUrl: typeof body.placeholderUrl === 'string' ? body.placeholderUrl : undefined,

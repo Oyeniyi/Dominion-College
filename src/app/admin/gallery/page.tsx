@@ -7,14 +7,16 @@ import { listAdminAlbums, listAdminGalleryImages } from '@/server/services/cms-s
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminGalleryPage() {
-  const session = getServerComponentAdminSession();
+export default async function AdminGalleryPage() {
+  const session = await getServerComponentAdminSession();
   if (!session) {
     redirect('/admin/login');
   }
 
-  const albums = listAdminAlbums(session.user);
-  const { items: images } = listAdminGalleryImages(session.user, { limit: 100 });
+  const [albums, { items: images }] = await Promise.all([
+    listAdminAlbums(session.user),
+    listAdminGalleryImages(session.user, { limit: 100 }),
+  ]);
 
   return (
     <AdminShell

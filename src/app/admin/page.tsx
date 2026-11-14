@@ -8,13 +8,13 @@ import { getAdminDashboardOverview } from '@/server/services/cms-service';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminDashboardPage() {
-  const session = getServerComponentAdminSession();
+export default async function AdminDashboardPage() {
+  const session = await getServerComponentAdminSession();
   if (!session) {
     redirect('/admin/login');
   }
 
-  const summary = getAdminDashboardOverview(session.user);
+  const summary = await getAdminDashboardOverview(session.user);
 
   return (
     <AdminShell

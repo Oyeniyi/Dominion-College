@@ -1,16 +1,22 @@
 /**
- * Private-First Media Storage & File Content Inspector
+ * Private-First Supabase Storage Media Service & File Content Inspector
  * Adheres to ADR-004, AE-03, AE-09, SEC-09, SEC-16, and FR-07.
  * Never trusts filename or browser Content-Type header alone; inspects magic bytes.
+ * Zero local filesystem persistence in production runtime.
  */
 
 import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
-import { PayloadTooLargeError, UnsupportedMediaTypeError } from '@/domain/errors';
-import { getServerConfig } from '../config';
+import {
+  PayloadTooLargeError,
+  UnsupportedMediaTypeError,
+} from '@/domain/errors';
+import {
+  getSupabaseStorageAdminClient,
+  getSupabaseStorageBuckets,
+} from '../storage/supabase-client';
 
 export const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
+const SIGNED_URL_EXPIRY_SECONDS = 3600; // 1 hour for admin preview of staged/unpublished media
 
 export type DetectedImageFormat = 'jpeg' | 'png' | 'webp' | 'svg';
 
@@ -83,98 +89,186 @@ const EXTENSION_BY_FORMAT: Record<DetectedImageFormat, string> = {
   svg: 'svg',
 };
 
+const MIME_BY_FORMAT: Record<DetectedImageFormat, string> = {
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+};
+
+const MIME_BY_EXTENSION: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+};
+
+export function storageKeyToObjectPath(storageKey: string): string | null {
+  if (!storageKey.startsWith('media:')) {
+    return null;
+  }
+  const filename = storageKey.replace(/^media:/, '');
+  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    return null;
+  }
+  return `gallery/${filename}`;
+}
+
+function inferContentTypeFromPath(objectPath: string): string {
+  const ext = objectPath.split('.').pop()?.toLowerCase() || '';
+  return MIME_BY_EXTENSION[ext] || 'application/octet-stream';
+}
+
+async function createStagingSignedUrl(objectPath: string): Promise<string> {
+  const supabase = getSupabaseStorageAdminClient();
+  const { stagingBucket } = getSupabaseStorageBuckets();
+  const { data, error } = await supabase.storage
+    .from(stagingBucket)
+    .createSignedUrl(objectPath, SIGNED_URL_EXPIRY_SECONDS);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(
+      `Failed to generate signed preview URL for staged media: ${error?.message || 'unknown error'}`
+    );
+  }
+  return data.signedUrl;
+}
+
 /**
- * Stages an uploaded image privately first, and promotes to public storage only if approved & published.
+ * Stages an uploaded image in the private Supabase bucket first,
+ * and promotes a copy to the public bucket only if approved & published.
  */
-export function storeUploadedImageBytes(options: {
+export async function storeUploadedImageBytes(options: {
   buffer: Buffer;
   publishImmediately: boolean;
-}): {
+}): Promise<{
   storageKey: string;
   publicUrl: string;
   format: DetectedImageFormat;
-} {
+}> {
   const format = inspectImageBufferFormat(options.buffer);
   const ext = EXTENSION_BY_FORMAT[format];
+  const contentType = MIME_BY_FORMAT[format];
   const opaqueId = crypto.randomUUID();
   const filename = `${opaqueId}.${ext}`;
   const storageKey = `media:${filename}`;
+  const objectPath = `gallery/${filename}`;
 
-  const config = getServerConfig();
-  fs.mkdirSync(config.mediaStagingDir, { recursive: true });
-  fs.mkdirSync(config.mediaPublicDir, { recursive: true });
+  const supabase = getSupabaseStorageAdminClient();
+  const { stagingBucket, publicBucket } = getSupabaseStorageBuckets();
 
-  const stagingFilePath = path.join(config.mediaStagingDir, filename);
-  fs.writeFileSync(stagingFilePath, options.buffer);
+  const { error: stagingError } = await supabase.storage
+    .from(stagingBucket)
+    .upload(objectPath, options.buffer, {
+      contentType,
+      cacheControl: '3600',
+      upsert: false,
+    });
 
-  if (options.publishImmediately) {
-    const publicFilePath = path.join(config.mediaPublicDir, filename);
-    fs.copyFileSync(stagingFilePath, publicFilePath);
+  if (stagingError) {
+    throw new Error(
+      `Failed to stage uploaded image in Supabase Storage: ${stagingError.message}`
+    );
   }
 
+  if (options.publishImmediately) {
+    const { error: publicError } = await supabase.storage
+      .from(publicBucket)
+      .upload(objectPath, options.buffer, {
+        contentType,
+        cacheControl: '31536000',
+        upsert: true,
+      });
+
+    if (publicError) {
+      await supabase.storage.from(stagingBucket).remove([objectPath]).catch(() => {});
+      throw new Error(
+        `Failed to publish uploaded image to public Supabase bucket: ${publicError.message}`
+      );
+    }
+
+    const { data } = supabase.storage.from(publicBucket).getPublicUrl(objectPath);
+    return {
+      storageKey,
+      publicUrl: data.publicUrl,
+      format,
+    };
+  }
+
+  const signedUrl = await createStagingSignedUrl(objectPath);
   return {
     storageKey,
-    publicUrl: `/uploads/${filename}`,
+    publicUrl: signedUrl,
     format,
   };
 }
 
 /**
- * Synchronizes public rendition availability with publication & approval state (AE-09, SEC-16).
+ * Synchronizes public Supabase Storage bucket availability with publication & approval state (AE-09, SEC-16).
  */
-export function syncMediaPublicVisibility(options: {
+export async function syncMediaPublicVisibility(options: {
   storageKey: string;
   isPubliclyVisible: boolean;
-}): void {
-  if (!options.storageKey.startsWith('media:')) {
+}): Promise<{ publicUrl: string | null }> {
+  const objectPath = storageKeyToObjectPath(options.storageKey);
+  if (!objectPath) {
     // Built-in static placeholder assets remain in /public/placeholders
-    return;
-  }
-  const filename = options.storageKey.replace(/^media:/, '');
-  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-    return;
+    return { publicUrl: null };
   }
 
-  const config = getServerConfig();
-  const stagingPath = path.join(config.mediaStagingDir, filename);
-  const publicPath = path.join(config.mediaPublicDir, filename);
+  const supabase = getSupabaseStorageAdminClient();
+  const { stagingBucket, publicBucket } = getSupabaseStorageBuckets();
 
   if (options.isPubliclyVisible) {
-    if (fs.existsSync(stagingPath)) {
-      fs.mkdirSync(config.mediaPublicDir, { recursive: true });
-      fs.copyFileSync(stagingPath, publicPath);
+    const { data: downloaded, error: downloadError } = await supabase.storage
+      .from(stagingBucket)
+      .download(objectPath);
+
+    if (downloadError || !downloaded) {
+      throw new Error(
+        `Failed to read staged image for publication: ${downloadError?.message || 'missing object'}`
+      );
     }
-  } else {
-    if (fs.existsSync(publicPath)) {
-      try {
-        fs.unlinkSync(publicPath);
-      } catch {
-        // Ignore if already removed
-      }
+
+    const buffer = Buffer.from(await downloaded.arrayBuffer());
+    const { error: uploadError } = await supabase.storage
+      .from(publicBucket)
+      .upload(objectPath, buffer, {
+        contentType: inferContentTypeFromPath(objectPath),
+        cacheControl: '31536000',
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw new Error(
+        `Failed to publish image to public Supabase bucket: ${uploadError.message}`
+      );
     }
+
+    const { data } = supabase.storage.from(publicBucket).getPublicUrl(objectPath);
+    return { publicUrl: data.publicUrl };
   }
+
+  await supabase.storage.from(publicBucket).remove([objectPath]).catch(() => {});
+  const signedUrl = await createStagingSignedUrl(objectPath);
+  return { publicUrl: signedUrl };
 }
 
-export function removeStoredMediaBytes(storageKey: string): void {
-  if (!storageKey.startsWith('media:')) {
+/**
+ * Deletes an image object from both public and private staging Supabase buckets.
+ */
+export async function removeStoredMediaBytes(storageKey: string): Promise<void> {
+  const objectPath = storageKeyToObjectPath(storageKey);
+  if (!objectPath) {
     return;
   }
-  const filename = storageKey.replace(/^media:/, '');
-  if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-    return;
-  }
-  const config = getServerConfig();
-  const stagingPath = path.join(config.mediaStagingDir, filename);
-  const publicPath = path.join(config.mediaPublicDir, filename);
 
-  for (const filePath of [publicPath, stagingPath]) {
-    if (fs.existsSync(filePath)) {
-      try {
-        fs.unlinkSync(filePath);
-      } catch {
-        // Ignore cleanup error
-      }
-    }
-  }
+  const supabase = getSupabaseStorageAdminClient();
+  const { stagingBucket, publicBucket } = getSupabaseStorageBuckets();
+
+  await Promise.all([
+    supabase.storage.from(publicBucket).remove([objectPath]).catch(() => {}),
+    supabase.storage.from(stagingBucket).remove([objectPath]).catch(() => {}),
+  ]);
 }
-

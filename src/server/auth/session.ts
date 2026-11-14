@@ -69,10 +69,10 @@ export function clearSessionCookiesOnResponse(
  * If `requireCsrf` is true (for state-changing POST/PATCH/DELETE mutations), also verifies
  * that `X-CSRF-Token` matches the signed session payload's `csrf` claim (SEC-03).
  */
-export function requireAuthenticatedAdminFromRequest(
+export async function requireAuthenticatedAdminFromRequest(
   req: NextRequest,
   options?: { requireCsrf?: boolean }
-): { user: AdminUser; csrfToken: string } {
+): Promise<{ user: AdminUser; csrfToken: string }> {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
   const payload = verifySignedSessionToken(token);
   if (!payload) {
@@ -86,7 +86,7 @@ export function requireAuthenticatedAdminFromRequest(
     }
   }
 
-  const user = getActiveAdminUserById(payload.sub);
+  const user = await getActiveAdminUserById(payload.sub);
   if (!user) {
     throw new AuthenticationError('Administrator account not found.');
   }
@@ -100,17 +100,17 @@ export function requireAuthenticatedAdminFromRequest(
 /**
  * Server Component helper to read current authenticated AdminSessionUser (or null if unauthenticated).
  */
-export function getServerComponentAdminSession(): {
+export async function getServerComponentAdminSession(): Promise<{
   user: AdminSessionUser;
   csrfToken: string;
-} | null {
+} | null> {
   try {
     const cookieStore = cookies();
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
     const payload = verifySignedSessionToken(token);
     if (!payload) return null;
 
-    const dbUser = getActiveAdminUserById(payload.sub);
+    const dbUser = await getActiveAdminUserById(payload.sub);
     if (!dbUser || !dbUser.isActive) return null;
 
     return {

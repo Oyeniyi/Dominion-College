@@ -9,12 +9,12 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
     const status = req.nextUrl.searchParams.get('status');
     const cursor = req.nextUrl.searchParams.get('cursor');
     const limit = req.nextUrl.searchParams.get('limit');
 
-    const result = listAdminEnquiries(user, { status, cursor, limit });
+    const result = await listAdminEnquiries(user, { status, cursor, limit });
     return jsonResponse(
       {
         data: result.items,

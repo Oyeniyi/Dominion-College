@@ -7,13 +7,13 @@ import { listAdminNews } from '@/server/services/cms-service';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminNewsPage() {
-  const session = getServerComponentAdminSession();
+export default async function AdminNewsPage() {
+  const session = await getServerComponentAdminSession();
   if (!session) {
     redirect('/admin/login');
   }
 
-  const { items: posts } = listAdminNews(session.user, { limit: 100 });
+  const { items: posts } = await listAdminNews(session.user, { limit: 100 });
 
   return (
     <AdminShell

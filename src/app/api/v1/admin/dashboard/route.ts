@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
-    const summary = getAdminDashboardOverview(user);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
+    const summary = await getAdminDashboardOverview(user);
     return jsonResponse({ data: summary, meta: { requestId } }, { status: 200, requestId });
   } catch (error) {
     return handleRouteError(error, req, requestId);

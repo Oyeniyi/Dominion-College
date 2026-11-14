@@ -3,18 +3,17 @@
  * Adheres to AE-07 and SEC-11. Never import this module in client components.
  */
 
-import path from 'node:path';
-
 export interface ServerConfig {
   nodeEnv: 'development' | 'test' | 'staging' | 'production';
   siteUrl: string;
-  databasePath: string;
   sessionSecret: string;
   bootstrapAdminEmail: string;
   bootstrapAdminPassword: string;
   bootstrapAdminName: string;
-  mediaStagingDir: string;
-  mediaPublicDir: string;
+  supabaseUrl: string;
+  supabaseServiceRoleKey: string;
+  supabaseStorageStagingBucket: string;
+  supabaseStoragePublicBucket: string;
   schoolTimezone: string;
 }
 
@@ -34,26 +33,26 @@ export function getServerConfig(env: NodeJS.ProcessEnv = process.env): ServerCon
     );
   }
 
-  const databasePath =
-    env.DATABASE_PATH?.trim() ||
-    (rawEnv === 'test'
-      ? ':memory:'
-      : path.join(process.cwd(), 'data', 'dominion_college.sqlite'));
-
   return {
     nodeEnv: rawEnv,
     siteUrl: (env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/+$/, ''),
-    databasePath,
     sessionSecret,
-    bootstrapAdminEmail: (env.BOOTSTRAP_ADMIN_EMAIL || 'admin@dominioncollege.edu.ng')
+    bootstrapAdminEmail: (
+      env.BOOTSTRAP_ADMIN_EMAIL || (isProd ? '' : 'admin@dominioncollege.edu.ng')
+    )
       .trim()
       .toLowerCase(),
-    bootstrapAdminPassword: env.BOOTSTRAP_ADMIN_PASSWORD || 'DominionAdmin!2026',
+    bootstrapAdminPassword:
+      env.BOOTSTRAP_ADMIN_PASSWORD || (isProd ? '' : 'DominionAdmin!2026'),
     bootstrapAdminName: (env.BOOTSTRAP_ADMIN_NAME || 'Dominion College Administrator').trim(),
-    mediaStagingDir:
-      env.MEDIA_STAGING_DIR || path.join(process.cwd(), 'data', 'staging-uploads'),
-    mediaPublicDir: env.MEDIA_PUBLIC_DIR || path.join(process.cwd(), 'public', 'uploads'),
+    supabaseUrl: (env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || '').trim().replace(/\/+$/, ''),
+    supabaseServiceRoleKey: (env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+    supabaseStorageStagingBucket: (
+      env.SUPABASE_STORAGE_STAGING_BUCKET || 'dominion-media-staging'
+    ).trim(),
+    supabaseStoragePublicBucket: (
+      env.SUPABASE_STORAGE_PUBLIC_BUCKET || 'dominion-media-public'
+    ).trim(),
     schoolTimezone: env.SCHOOL_TIMEZONE || 'Africa/Lagos',
   };
 }
-

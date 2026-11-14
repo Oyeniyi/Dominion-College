@@ -1,66 +1,90 @@
 /**
- * Server-Only SQLite Connection Manager
- * Uses Node.js built-in `node:sqlite` (`DatabaseSync`).
+ * Server-Only PostgreSQL Connection Manager (Supabase / Vercel Serverless Ready)
+ * Uses Postgres.js (`postgres`) with conservative pooling and PgBouncer compatibility.
  * Adheres to AE-06 (server-only, parameterized queries, reviewed migrations).
  */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
-import { getServerConfig } from '../config';
+import postgres from 'postgres';
+import { getPostgresConfig } from './config';
 import { runMigrations } from './migrations';
 import { seedInitialDataIfEmpty } from './seed-data';
+import type { SqlClient } from './types';
 
-let activeDb: DatabaseSync | null = null;
-let activeDbPath: string | null = null;
+const globalForDb = globalThis as unknown as {
+  __dominionSql?: SqlClient;
+  __dominionConnString?: string;
+  __dominionInitPromise?: Promise<void>;
+};
 
-export function getDatabase(): DatabaseSync {
-  const config = getServerConfig();
+export function getSqlClient(): SqlClient {
+  const cfg = getPostgresConfig();
 
-  if (activeDb && activeDbPath === config.databasePath) {
-    return activeDb;
+  if (globalForDb.__dominionSql && globalForDb.__dominionConnString === cfg.connectionString) {
+    return globalForDb.__dominionSql;
   }
 
-  if (config.databasePath !== ':memory:') {
-    const dir = path.dirname(config.databasePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  }
+  const client = postgres(cfg.connectionString, {
+    max: cfg.maxConnections,
+    prepare: cfg.prepare,
+    ssl: cfg.ssl,
+    idle_timeout: cfg.idleTimeoutSeconds,
+    connect_timeout: cfg.connectTimeoutSeconds,
+    onnotice: () => {
+      // Suppress PostgreSQL NOTICE noise (e.g., CREATE TABLE IF NOT EXISTS)
+    },
+  });
 
-  const db = new DatabaseSync(config.databasePath);
-  db.exec('PRAGMA foreign_keys = ON;');
-  if (config.databasePath !== ':memory:') {
-    db.exec('PRAGMA journal_mode = WAL;');
-  }
-
-  runMigrations(db);
-  seedInitialDataIfEmpty(db);
-
-  activeDb = db;
-  activeDbPath = config.databasePath;
-  return db;
+  globalForDb.__dominionSql = client;
+  globalForDb.__dominionConnString = cfg.connectionString;
+  globalForDb.__dominionInitPromise = undefined;
+  return client;
 }
 
-/**
- * Replaces the active database with a fresh in-memory or custom database for deterministic testing.
- */
-export function resetDatabaseForTests(options?: { seed?: boolean }): DatabaseSync {
-  if (activeDb) {
-    try {
-      activeDb.close();
-    } catch {
-      // Ignore already-closed errors
-    }
+export async function getDatabase(): Promise<SqlClient> {
+  const sql = getSqlClient();
+
+  if (!globalForDb.__dominionInitPromise) {
+    globalForDb.__dominionInitPromise = (async () => {
+      await runMigrations(sql);
+      await seedInitialDataIfEmpty(sql, { allowMissingProdBootstrap: true });
+    })();
   }
-  const db = new DatabaseSync(':memory:');
-  db.exec('PRAGMA foreign_keys = ON;');
-  runMigrations(db);
-  if (options?.seed !== false) {
-    seedInitialDataIfEmpty(db);
+
+  try {
+    await globalForDb.__dominionInitPromise;
+  } catch (err) {
+    globalForDb.__dominionInitPromise = undefined;
+    throw err;
   }
-  activeDb = db;
-  activeDbPath = ':memory:';
-  return db;
+
+  return sql;
 }
 
+export async function closeDatabase(): Promise<void> {
+  if (globalForDb.__dominionSql) {
+    await globalForDb.__dominionSql.end({ timeout: 5 });
+    globalForDb.__dominionSql = undefined;
+    globalForDb.__dominionConnString = undefined;
+    globalForDb.__dominionInitPromise = undefined;
+  }
+}
+
+export async function resetDatabaseForTests(): Promise<void> {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('resetDatabaseForTests() must never run in production.');
+  }
+  const sql = getSqlClient();
+  await runMigrations(sql);
+  await sql`
+    TRUNCATE TABLE
+      news_article,
+      gallery_image,
+      gallery_album,
+      admissions_enquiry,
+      site_settings,
+      admin_user
+    RESTART IDENTITY CASCADE
+  `;
+  globalForDb.__dominionInitPromise = undefined;
+  await seedInitialDataIfEmpty(sql);
+}

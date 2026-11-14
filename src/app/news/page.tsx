@@ -13,9 +13,9 @@ export const metadata: Metadata = {
     'Read official announcements, academic calendar notices, and school news from Dominion College, Oba-Ile, Akure.',
 };
 
-export default function NewsPage() {
-  const settings = getPublicSiteSettings();
-  const { items: posts } = listPublishedNews({ limit: 24 });
+export default async function NewsPage() {
+  const settings = await getPublicSiteSettings();
+  const { items: posts } = await listPublishedNews({ limit: 24 });
 
   return (
     <PageShell settings={settings}>

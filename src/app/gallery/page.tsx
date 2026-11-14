@@ -17,10 +17,10 @@ export const metadata: Metadata = {
     'Explore campus facilities, classrooms, laboratories, library spaces, and student activities at Dominion College, Oba-Ile, Akure.',
 };
 
-export default function GalleryPage() {
-  const settings = getPublicSiteSettings();
-  const albums = listPublishedAlbums();
-  const { items: images } = listPublishedGalleryImages({ limit: 48 });
+export default async function GalleryPage() {
+  const settings = await getPublicSiteSettings();
+  const albums = await listPublishedAlbums();
+  const { items: images } = await listPublishedGalleryImages({ limit: 48 });
 
   return (
     <PageShell settings={settings}>

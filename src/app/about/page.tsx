@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     'Learn about the identity, mission, vision, core values, and educational divisions (Day Care, KG 1–2, Nursery 1–2, Primary 1–5, JSS 1–3, SSS 1–3) of Dominion College, Oba-Ile, Akure.',
 };
 
-export default function AboutPage() {
-  const settings = getPublicSiteSettings();
-  const content = getPublicInstitutionalContent();
+export default async function AboutPage() {
+  const settings = await getPublicSiteSettings();
+  const content = await getPublicInstitutionalContent();
 
   return (
     <PageShell settings={settings}>

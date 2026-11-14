@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const cursor = req.nextUrl.searchParams.get('cursor');
     const limit = req.nextUrl.searchParams.get('limit');
-    const result = listPublishedNews({ cursor, limit });
+    const result = await listPublishedNews({ cursor, limit });
     return jsonResponse(
       {
         data: result.items,

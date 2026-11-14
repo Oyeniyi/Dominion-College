@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function PATCH(req: NextRequest, context: RouteContext<{ id: string }>) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, context: RouteContext<{ id: string
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const updated = updateAdminGalleryImage(user, context.params.id, body);
+    const updated = await updateAdminGalleryImage(user, context.params.id, body);
     logSecurityEvent({
       category: updated.status === 'published' ? 'CONTENT_PUBLISHED' : 'CONTENT_UPDATED',
       outcome: 'success',
@@ -40,8 +40,8 @@ export async function PATCH(req: NextRequest, context: RouteContext<{ id: string
 export async function DELETE(req: NextRequest, context: RouteContext<{ id: string }>) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
-    deleteAdminGalleryImage(user, context.params.id);
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    await deleteAdminGalleryImage(user, context.params.id);
     logSecurityEvent({
       category: 'MEDIA_DELETED',
       outcome: 'success',

@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     'Explore Day Care, KG 1–2, Nursery 1–2, Primary 1–5, Junior Secondary (JSS 1–3), and Senior Secondary (SSS 1–3) programmes at Dominion College, Oba-Ile, Akure.',
 };
 
-export default function AcademicsPage() {
-  const settings = getPublicSiteSettings();
-  const content = getPublicInstitutionalContent();
+export default async function AcademicsPage() {
+  const settings = await getPublicSiteSettings();
+  const content = await getPublicInstitutionalContent();
   const { academics } = content;
 
   return (

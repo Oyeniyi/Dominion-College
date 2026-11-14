@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const result = createAdmissionsEnquiry(body);
+    const result = await createAdmissionsEnquiry(body);
     logSecurityEvent({
       category: 'ENQUIRY_CREATED',
       outcome: 'success',

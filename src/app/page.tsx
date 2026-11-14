@@ -22,11 +22,11 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default function HomePage() {
-  const settings = getPublicSiteSettings();
-  const content = getPublicInstitutionalContent();
-  const latestNews = listPublishedNews({ limit: 3 }).items;
-  const featuredGallery = listPublishedGalleryImages({ limit: 3 }).items;
+export default async function HomePage() {
+  const settings = await getPublicSiteSettings();
+  const content = await getPublicInstitutionalContent();
+  const latestNews = (await listPublishedNews({ limit: 3 })).items;
+  const featuredGallery = (await listPublishedGalleryImages({ limit: 3 })).items;
 
   return (
     <PageShell settings={settings}>

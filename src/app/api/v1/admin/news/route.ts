@@ -10,11 +10,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
     const status = req.nextUrl.searchParams.get('status');
     const cursor = req.nextUrl.searchParams.get('cursor');
     const limit = req.nextUrl.searchParams.get('limit');
-    const result = listAdminNews(user, { status, cursor, limit });
+    const result = await listAdminNews(user, { status, cursor, limit });
     return jsonResponse(
       { data: result.items, meta: { nextCursor: result.nextCursor, requestId } },
       { status: 200, requestId },
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const created = createAdminNews(user, body);
+    const created = await createAdminNews(user, body);
     logSecurityEvent({
       category: created.status === 'published' ? 'CONTENT_PUBLISHED' : 'CONTENT_UPDATED',
       outcome: 'success',

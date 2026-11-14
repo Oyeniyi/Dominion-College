@@ -7,13 +7,13 @@ import { listAdminEnquiries } from '@/server/services/cms-service';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminEnquiriesPage() {
-  const session = getServerComponentAdminSession();
+export default async function AdminEnquiriesPage() {
+  const session = await getServerComponentAdminSession();
   if (!session) {
     redirect('/admin/login');
   }
 
-  const { items } = listAdminEnquiries(session.user, { limit: 100 });
+  const { items } = await listAdminEnquiries(session.user, { limit: 100 });
 
   return (
     <AdminShell

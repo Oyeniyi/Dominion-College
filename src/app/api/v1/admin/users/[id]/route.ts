@@ -13,7 +13,7 @@ export async function PATCH(
 ) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -21,7 +21,7 @@ export async function PATCH(
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const updated = updateAdminUserAccount(user, context.params.id, body);
+    const updated = await updateAdminUserAccount(user, context.params.id, body);
     logSecurityEvent({
       category: 'ADMIN_USER_UPDATED',
       outcome: 'success',

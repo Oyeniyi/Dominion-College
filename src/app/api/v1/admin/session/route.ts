@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user, csrfToken } = requireAuthenticatedAdminFromRequest(req);
+    const { user, csrfToken } = await requireAuthenticatedAdminFromRequest(req);
     return jsonResponse(
       {
         data: {
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       ]);
     }
 
-    const user = authenticateAdminCredentials(email, password);
+    const user = await authenticateAdminCredentials(email, password);
     const response = NextResponse.json(
       {
         data: {
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     const existingToken = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
     const response = NextResponse.json(

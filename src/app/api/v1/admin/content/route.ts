@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
-    const content = getAdminInstitutionalContent(user);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
+    const content = await getAdminInstitutionalContent(user);
     return jsonResponse({ data: content, meta: { requestId } }, { status: 200, requestId });
   } catch (error) {
     return handleRouteError(error, req, requestId);
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const updated = updateAdminInstitutionalContent(user, body);
+    const updated = await updateAdminInstitutionalContent(user, body);
     logSecurityEvent({
       category: 'SETTINGS_UPDATED',
       outcome: 'success',

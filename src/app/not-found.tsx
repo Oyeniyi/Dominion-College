@@ -3,9 +3,15 @@ import Link from 'next/link';
 import { Compass, Home, ArrowRight } from 'lucide-react';
 import { PageShell } from '@/components/PageShell';
 import { getPublicSiteSettings } from '@/server/services/cms-service';
+import { mapPublicSiteSettings } from '@/server/db/repositories/settings.repository';
 
-export default function NotFoundPage() {
-  const settings = getPublicSiteSettings();
+export default async function NotFoundPage() {
+  let settings;
+  try {
+    settings = await getPublicSiteSettings();
+  } catch {
+    settings = mapPublicSiteSettings(null);
+  }
 
   return (
     <PageShell settings={settings}>

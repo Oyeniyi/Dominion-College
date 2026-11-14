@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     'Read the Dominion College Privacy Notice regarding admissions enquiry data, student media protection, and data security.',
 };
 
-export default function PrivacyPage() {
-  const settings = getPublicSiteSettings();
-  const content = getPublicInstitutionalContent();
+export default async function PrivacyPage() {
+  const settings = await getPublicSiteSettings();
+  const content = await getPublicInstitutionalContent();
 
   return (
     <PageShell settings={settings}>

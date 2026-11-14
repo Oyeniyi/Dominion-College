@@ -10,14 +10,16 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminSettingsPage() {
-  const session = getServerComponentAdminSession();
+export default async function AdminSettingsPage() {
+  const session = await getServerComponentAdminSession();
   if (!session) {
     redirect('/admin/login');
   }
 
-  const settings = getAdminSiteSettings(session.user);
-  const content = getAdminInstitutionalContent(session.user);
+  const [settings, content] = await Promise.all([
+    getAdminSiteSettings(session.user),
+    getAdminInstitutionalContent(session.user),
+  ]);
 
   return (
     <AdminShell

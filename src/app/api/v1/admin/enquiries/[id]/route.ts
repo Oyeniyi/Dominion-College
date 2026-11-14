@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, context: RouteContext<{ id: string }>) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
-    const enquiry = getAdminEnquiryById(user, context.params.id);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
+    const enquiry = await getAdminEnquiryById(user, context.params.id);
     return jsonResponse({ data: enquiry, meta: { requestId } }, { status: 200, requestId });
   } catch (error) {
     return handleRouteError(error, req, requestId);
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, context: RouteContext<{ id: string }
 export async function PATCH(req: NextRequest, context: RouteContext<{ id: string }>) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, context: RouteContext<{ id: string
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const updated = updateAdminEnquiryStatus(user, context.params.id, body);
+    const updated = await updateAdminEnquiryStatus(user, context.params.id, body);
     logSecurityEvent({
       category: 'ENQUIRY_STATUS_UPDATED',
       outcome: 'success',

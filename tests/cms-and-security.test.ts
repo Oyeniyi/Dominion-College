@@ -1,16 +1,13 @@
 import { describe, it, beforeEach, afterAll } from 'vitest';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
 
 // Configure isolated test environment variables before importing server modules
-const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dominion-college-test-'));
-process.env.DATABASE_PATH = path.join(tempDir, 'test-dominion.sqlite');
 process.env.SESSION_SECRET = 'test-session-secret-with-at-least-32-characters-long-9999';
 process.env.ADMIN_BOOTSTRAP_EMAIL = 'admin@dominioncollege.edu.ng';
 process.env.ADMIN_BOOTSTRAP_PASSWORD = 'DominionTestPassword!2026';
 process.env.ADMIN_BOOTSTRAP_NAME = 'Test School Administrator';
+
+const hasPostgresTestDb = Boolean(process.env.TEST_DATABASE_URL || process.env.DATABASE_URL);
 
 import {
   validateEnquiryCreateInput,
@@ -43,7 +40,7 @@ import {
 } from '../src/server/auth/crypto.ts';
 import { inspectImageBufferFormat } from '../src/server/services/media-storage.ts';
 import { redactLogMetadata } from '../src/server/logger.ts';
-import { resetDatabaseForTests } from '../src/server/db/client.ts';
+import { closeDatabase, resetDatabaseForTests } from '../src/server/db/client.ts';
 import {
   createAdmissionsEnquiry,
   listAdminEnquiries,
@@ -279,25 +276,21 @@ describe('Dominion College — Validation, Security & RBAC Unit Tests', () => {
   });
 });
 
-describe('Dominion College — Database & CMS Service Integration Tests', () => {
-  beforeEach(() => {
-    resetDatabaseForTests();
+describe.runIf(hasPostgresTestDb)('Dominion College — Database & CMS Service Integration Tests', () => {
+  beforeEach(async () => {
+    await resetDatabaseForTests();
   });
 
-  afterAll(() => {
-    try {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup lock on Windows if any
-    }
+  afterAll(async () => {
+    await closeDatabase();
   });
 
-  it('seeds verified Dominion College identity, motto, Early Years, Primary, JSS & SSS content', () => {
-    const settings = getPublicSiteSettings();
+  it('seeds verified Dominion College identity, motto, Early Years, Primary, JSS & SSS content', async () => {
+    const settings = await getPublicSiteSettings();
     assert.equal(settings.officialName, 'Dominion College, Oba-Ile, Akure');
     assert.equal(settings.motto, 'THE SECERET OF WISDOM IS GOD');
 
-    const content = getPublicInstitutionalContent();
+    const content = await getPublicInstitutionalContent();
     assert.ok(content.academics.earlyYears);
     assert.ok(content.academics.earlyYears.name.includes('Day Care'));
     assert.ok(content.academics.primarySchool);
@@ -306,8 +299,8 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
     assert.ok(content.academics.seniorSecondary);
   });
 
-  it('persists public admissions enquiries across Day Care / Primary / Secondary and allows admin status updates', () => {
-    const created = createAdmissionsEnquiry({
+  it('persists public admissions enquiries across Day Care / Primary / Secondary and allows admin status updates', async () => {
+    const created = await createAdmissionsEnquiry({
       parentName: 'Mr. Kunle Adeyemi',
       phone: '+234 803 555 0199',
       email: 'kunle.adeyemi@example.com',
@@ -319,48 +312,48 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
     assert.ok(created.createdId);
     assert.equal(created.deduplicated, false);
 
-    const list = listAdminEnquiries(adminActor, { status: 'new' });
+    const list = await listAdminEnquiries(adminActor, { status: 'new' });
     assert.equal(list.items.length, 1);
     assert.equal(list.items[0].parentName, 'Mr. Kunle Adeyemi');
     assert.equal(list.items[0].entryLevel, 'Primary 4');
 
-    const updated = updateAdminEnquiryStatus(adminActor, created.createdId, {
+    const updated = await updateAdminEnquiryStatus(adminActor, created.createdId, {
       status: 'contacted',
     });
     assert.equal(updated.status, 'contacted');
 
-    const summary = getAdminDashboardOverview(adminActor);
+    const summary = await getAdminDashboardOverview(adminActor);
     assert.equal(summary.totalEnquiriesCount, 1);
     assert.equal(summary.newEnquiriesCount, 0);
   });
 
-  it('isolates draft news articles from public news endpoints until published', () => {
-    const draft = createAdminNews(adminActor, {
+  it('isolates draft news articles from public news endpoints until published', async () => {
+    const draft = await createAdminNews(adminActor, {
       title: 'Private Draft Notice on Staff Meeting',
       excerpt: 'Internal draft notice not yet ready for public display.',
       body: '<p>Draft body text.</p>',
       status: 'draft',
     });
 
-    const publicBefore = listPublishedNews({ limit: 20 });
+    const publicBefore = await listPublishedNews({ limit: 20 });
     assert.ok(!publicBefore.items.some((p) => p.slug === draft.slug));
-    assert.throws(() => getPublishedNewsBySlug(draft.slug), NotFoundError);
+    await assert.rejects(() => getPublishedNewsBySlug(draft.slug), NotFoundError);
 
-    const published = updateAdminNews(adminActor, draft.id, {
+    const published = await updateAdminNews(adminActor, draft.id, {
       status: 'published',
     });
     assert.equal(published.status, 'published');
 
-    const publicAfter = listPublishedNews({ limit: 20 });
+    const publicAfter = await listPublishedNews({ limit: 20 });
     assert.ok(publicAfter.items.some((p) => p.slug === draft.slug));
 
-    deleteAdminNews(adminActor, draft.id);
-    const publicFinal = listPublishedNews({ limit: 20 });
+    await deleteAdminNews(adminActor, draft.id);
+    const publicFinal = await listPublishedNews({ limit: 20 });
     assert.ok(!publicFinal.items.some((p) => p.slug === draft.slug));
   });
 
-  it('isolates draft gallery images and enforces student media consent before publishing', () => {
-    const draftImg = uploadAdminGalleryImage(adminActor, {
+  it('isolates draft gallery images and enforces student media consent before publishing', async () => {
+    const draftImg = await uploadAdminGalleryImage(adminActor, {
       metadata: {
         altText: 'Senior secondary students performing titration',
         caption: 'Students in Chemistry Practical',
@@ -373,11 +366,11 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
       placeholderUrl: '/placeholders/science-lab.svg',
     });
 
-    const publicGalleryBefore = listPublishedGalleryImages({ limit: 50 });
+    const publicGalleryBefore = await listPublishedGalleryImages({ limit: 50 });
     assert.ok(!publicGalleryBefore.items.some((i) => i.id === draftImg.id));
 
     // Attempt to publish without approvalReference when identifiableStudents=true must fail
-    assert.throws(
+    await assert.rejects(
       () =>
         updateAdminGalleryImage(adminActor, draftImg.id, {
           status: 'published',
@@ -386,45 +379,45 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
     );
 
     // Providing approvalReference allows publishing
-    const publishedImg = updateAdminGalleryImage(adminActor, draftImg.id, {
+    const publishedImg = await updateAdminGalleryImage(adminActor, draftImg.id, {
       status: 'published',
       approvalReference: 'CONSENT-2026-CHEM-01',
     });
     assert.equal(publishedImg.status, 'published');
 
-    const publicGalleryAfter = listPublishedGalleryImages({ limit: 50 });
+    const publicGalleryAfter = await listPublishedGalleryImages({ limit: 50 });
     assert.ok(publicGalleryAfter.items.some((i) => i.id === draftImg.id));
   });
 
-  it('updates public site settings and institutional content via admin service', () => {
-    updateAdminSiteSettings(adminActor, {
+  it('updates public site settings and institutional content via admin service', async () => {
+    await updateAdminSiteSettings(adminActor, {
       telephone: '+234 803 999 8888',
       whatsappNumber: '+234 803 999 8888',
       email: 'admissions@dominioncollege.edu.ng',
     });
 
-    const publicSettings = getPublicSiteSettings();
+    const publicSettings = await getPublicSiteSettings();
     assert.equal(publicSettings.telephone, '+2348039998888');
     assert.equal(publicSettings.whatsappNumber, '2348039998888');
 
-    updateAdminInstitutionalContent(adminActor, {
+    await updateAdminInstitutionalContent(adminActor, {
       about: {
         introduction: 'Updated Dominion College Introduction for the 2026/2027 Session.',
       },
     });
 
-    const publicContent = getPublicInstitutionalContent();
+    const publicContent = await getPublicInstitutionalContent();
     assert.equal(
       publicContent.about.introduction,
       'Updated Dominion College Introduction for the 2026/2027 Session.',
     );
   });
 
-  it('creates new administrator accounts, enforces strong passwords, changes own password, and prevents self-lockout', () => {
+  it('creates new administrator accounts, enforces strong passwords, changes own password, and prevents self-lockout', async () => {
     assert.throws(() => validatePasswordStrength('weakpass'), ValidationError);
     assert.equal(validatePasswordStrength('DominionStaff!2026'), 'DominionStaff!2026');
 
-    const created = createAdminUser(adminActor, {
+    const created = await createAdminUser(adminActor, {
       displayName: 'Mrs. Adebayo (Bursar)',
       email: 'bursar@dominioncollege.edu.ng',
       password: 'BursarStrongPassword!2026',
@@ -432,7 +425,7 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
     assert.equal(created.email, 'bursar@dominioncollege.edu.ng');
     assert.equal(created.isActive, true);
 
-    assert.throws(
+    await assert.rejects(
       () =>
         createAdminUser(adminActor, {
           displayName: 'Duplicate Bursar',
@@ -442,14 +435,14 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
       ConflictError,
     );
 
-    const signedInBursar = authenticateAdminCredentials(
+    const signedInBursar = await authenticateAdminCredentials(
       'bursar@dominioncollege.edu.ng',
       'BursarStrongPassword!2026',
     );
     assert.equal(signedInBursar.id, created.id);
 
     // Wrong current password rejected
-    assert.throws(
+    await assert.rejects(
       () =>
         changeOwnAdminPassword(signedInBursar, {
           currentPassword: 'WrongCurrentPassword!2026',
@@ -459,11 +452,11 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
     );
 
     // Correct current password updates password hash
-    changeOwnAdminPassword(signedInBursar, {
+    await changeOwnAdminPassword(signedInBursar, {
       currentPassword: 'BursarStrongPassword!2026',
       newPassword: 'BursarNewPassword!2027',
     });
-    assert.throws(
+    await assert.rejects(
       () =>
         authenticateAdminCredentials(
           'bursar@dominioncollege.edu.ng',
@@ -471,22 +464,22 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
         ),
       AuthenticationError,
     );
-    const reSignedIn = authenticateAdminCredentials(
+    const reSignedIn = await authenticateAdminCredentials(
       'bursar@dominioncollege.edu.ng',
       'BursarNewPassword!2027',
     );
     assert.equal(reSignedIn.id, created.id);
 
     // Prevent self-deactivation
-    assert.throws(
+    await assert.rejects(
       () => updateAdminUserAccount(reSignedIn, created.id, { isActive: false }),
       ConflictError,
     );
 
     // Another admin can deactivate the user, blocking future logins
-    const disabled = updateAdminUserAccount(adminActor, created.id, { isActive: false });
+    const disabled = await updateAdminUserAccount(adminActor, created.id, { isActive: false });
     assert.equal(disabled.isActive, false);
-    assert.throws(
+    await assert.rejects(
       () =>
         authenticateAdminCredentials(
           'bursar@dominioncollege.edu.ng',
@@ -495,7 +488,7 @@ describe('Dominion College — Database & CMS Service Integration Tests', () => 
       AuthorizationError,
     );
 
-    const allAdmins = listAdminUsers(adminActor);
+    const allAdmins = await listAdminUsers(adminActor);
     assert.ok(allAdmins.length >= 2);
   });
 });

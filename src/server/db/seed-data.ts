@@ -8,10 +8,10 @@
  * - Contains zero fabricated statistics, fake awards, or unverified telephone numbers.
  */
 
-import type { DatabaseSync } from 'node:sqlite';
 import { BrandColors, InstitutionalContent } from '@/domain/types';
 import { hashPassword } from '../auth/crypto';
 import { getServerConfig } from '../config';
+import type { SqlClient } from './types';
 
 export const DEFAULT_BRAND_COLORS: BrandColors = {
   primary: '#5B1A69',
@@ -195,71 +195,87 @@ Enquiry records are retained only for the duration of the active admissions cycl
   updatedAt: '2026-11-10T08:00:00.000Z',
 };
 
-export function seedInitialDataIfEmpty(db: DatabaseSync): void {
+export async function seedInitialDataIfEmpty(
+  sql: SqlClient,
+  options?: { allowMissingProdBootstrap?: boolean }
+): Promise<void> {
   const config = getServerConfig();
   const now = '2026-11-10T08:00:00.000Z';
 
-  const adminCount = db
-    .prepare('SELECT COUNT(*) as count FROM admin_user')
-    .get() as { count: number };
+  const adminRows = await sql<{ id: string }[]>`
+    SELECT id FROM admin_user ORDER BY created_at ASC LIMIT 1
+  `;
 
-  let adminId = '00000000-0000-4000-8000-000000000001';
+  let adminId: string | null = adminRows[0]?.id ?? null;
 
-  if (adminCount.count === 0) {
-    const passwordHash = hashPassword(config.bootstrapAdminPassword);
-    db.prepare(
-      `INSERT INTO admin_user (
-        id, identity_subject, display_name, email, password_hash, role_code, is_active, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, 'administrator', 1, ?, ?)`
-    ).run(
-      adminId,
-      `local:${config.bootstrapAdminEmail}`,
-      config.bootstrapAdminName,
-      config.bootstrapAdminEmail,
-      passwordHash,
-      now,
-      now
-    );
-  } else {
-    const existingAdmin = db.prepare('SELECT id FROM admin_user LIMIT 1').get() as { id: string };
-    adminId = existingAdmin.id;
+  if (!adminId) {
+    if (!config.bootstrapAdminEmail || !config.bootstrapAdminPassword) {
+      if (options?.allowMissingProdBootstrap) {
+        // In production without explicit bootstrap env vars, skip creating a default admin user.
+        adminId = null;
+      } else {
+        throw new Error(
+          'BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD must be set before seeding in production.'
+        );
+      }
+    } else {
+      adminId = '00000000-0000-4000-8000-000000000001';
+      const passwordHash = hashPassword(config.bootstrapAdminPassword);
+      await sql`
+        INSERT INTO admin_user (
+          id, identity_subject, display_name, email, password_hash, role_code, is_active, created_at, updated_at
+        ) VALUES (
+          ${adminId},
+          ${`local:${config.bootstrapAdminEmail}`},
+          ${config.bootstrapAdminName},
+          ${config.bootstrapAdminEmail},
+          ${passwordHash},
+          'administrator',
+          TRUE,
+          ${now},
+          ${now}
+        )
+        ON CONFLICT (id) DO NOTHING
+      `;
+    }
   }
 
-  const settingsCount = db
-    .prepare('SELECT COUNT(*) as count FROM site_settings')
-    .get() as { count: number };
-
-  if (settingsCount.count === 0) {
-    db.prepare(
-      `INSERT INTO site_settings (
-        singleton_id, official_name, motto, logo_url, brand_colors,
-        telephone, email, whatsapp_number, address, office_hours, directions_url,
-        social_links, default_seo_title, default_seo_description, institutional_content, updated_at
-      ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
+  await sql`
+    INSERT INTO site_settings (
+      singleton_id, official_name, motto, logo_url, brand_colors,
+      telephone, email, whatsapp_number, address, office_hours, directions_url,
+      social_links, default_seo_title, default_seo_description, institutional_content, updated_at
+    ) VALUES (
+      1,
       'Dominion College, Oba-Ile, Akure',
       'THE SECERET OF WISDOM IS GOD',
       '/images/dominion_logo.jpg',
-      JSON.stringify(DEFAULT_BRAND_COLORS),
-      null, // Unverified telephone omitted until school management confirms in Settings
+      ${JSON.stringify(DEFAULT_BRAND_COLORS)}::jsonb,
+      NULL,
       'info@dominioncollege.edu.ng',
-      null, // Unverified WhatsApp number omitted until configured in Settings (FR-05)
+      NULL,
       'Oba-Ile, Akure, Ondo State, Nigeria',
       'Monday – Friday: 8:00 AM – 4:00 PM (WAT)',
-      null,
-      JSON.stringify([]),
+      NULL,
+      ${JSON.stringify([])}::jsonb,
       'Dominion College, Oba-Ile, Akure | School Website & Admissions',
       'Official website of Dominion College, Oba-Ile, Akure, Ondo State, Nigeria. Explore our Day Care, Kindergarten, Nursery, Primary (1–5), Junior Secondary (JSS 1–3), and Senior Secondary (SSS 1–3) programmes, news, and admissions enquiries.',
-      JSON.stringify(DEFAULT_INSTITUTIONAL_CONTENT),
-      now
-    );
+      ${JSON.stringify(DEFAULT_INSTITUTIONAL_CONTENT)}::jsonb,
+      ${now}
+    )
+    ON CONFLICT (singleton_id) DO NOTHING
+  `;
+
+  if (!adminId) {
+    return;
   }
 
-  const albumCount = db
-    .prepare('SELECT COUNT(*) as count FROM gallery_album')
-    .get() as { count: number };
+  const albumCountRows = await sql<{ count: string }[]>`
+    SELECT COUNT(*)::text as count FROM gallery_album
+  `;
+  const albumCount = Number(albumCountRows[0]?.count ?? 0);
 
-  if (albumCount.count === 0) {
+  if (albumCount === 0) {
     const albums = [
       {
         id: '10000000-0000-4000-8000-000000000001',
@@ -279,12 +295,12 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
       },
     ];
 
-    const insertAlbum = db.prepare(
-      `INSERT INTO gallery_album (id, title, slug, description, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    );
     for (const album of albums) {
-      insertAlbum.run(album.id, album.title, album.slug, album.description, album.status, now, now);
+      await sql`
+        INSERT INTO gallery_album (id, title, slug, description, status, created_at, updated_at)
+        VALUES (${album.id}, ${album.title}, ${album.slug}, ${album.description}, ${album.status}, ${now}, ${now})
+        ON CONFLICT (id) DO NOTHING
+      `;
     }
 
     const images = [
@@ -297,8 +313,8 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
         caption: 'Dominion College, Oba-Ile, Akure — Campus Overview (Placeholder Visual)',
         displayOrder: 1,
         status: 'published',
-        schoolApproved: 1,
-        identifiableStudents: 0,
+        schoolApproved: true,
+        identifiableStudents: false,
         approvalReference: 'PLACEHOLDER-APPROVED-2026-11-10',
         contentStatus: 'placeholder',
       },
@@ -311,8 +327,8 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
         caption: 'Science & Practical Discovery Area (Placeholder Visual)',
         displayOrder: 2,
         status: 'published',
-        schoolApproved: 1,
-        identifiableStudents: 0,
+        schoolApproved: true,
+        identifiableStudents: false,
         approvalReference: 'PLACEHOLDER-APPROVED-2026-11-10',
         contentStatus: 'placeholder',
       },
@@ -325,8 +341,8 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
         caption: 'Library & Guided Study Environment (Placeholder Visual)',
         displayOrder: 3,
         status: 'published',
-        schoolApproved: 1,
-        identifiableStudents: 0,
+        schoolApproved: true,
+        identifiableStudents: false,
         approvalReference: 'PLACEHOLDER-APPROVED-2026-11-10',
         contentStatus: 'placeholder',
       },
@@ -339,8 +355,8 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
         caption: 'Junior & Senior Secondary Classroom Learning (Placeholder Visual)',
         displayOrder: 4,
         status: 'published',
-        schoolApproved: 1,
-        identifiableStudents: 0,
+        schoolApproved: true,
+        identifiableStudents: false,
         approvalReference: 'PLACEHOLDER-APPROVED-2026-11-10',
         contentStatus: 'placeholder',
       },
@@ -353,44 +369,45 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
         caption: 'Co-Curricular Clubs & Leadership Development (Placeholder Visual)',
         displayOrder: 5,
         status: 'published',
-        schoolApproved: 1,
-        identifiableStudents: 0,
+        schoolApproved: true,
+        identifiableStudents: false,
         approvalReference: 'PLACEHOLDER-APPROVED-2026-11-10',
         contentStatus: 'placeholder',
       },
     ];
 
-    const insertImage = db.prepare(
-      `INSERT INTO gallery_image (
-        id, album_id, storage_key, public_url, alt_text, caption, display_order,
-        status, school_approved, identifiable_students, approval_reference, content_status, uploaded_by, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
     for (const img of images) {
-      insertImage.run(
-        img.id,
-        img.albumId,
-        img.storageKey,
-        img.publicUrl,
-        img.altText,
-        img.caption,
-        img.displayOrder,
-        img.status,
-        img.schoolApproved,
-        img.identifiableStudents,
-        img.approvalReference,
-        img.contentStatus,
-        adminId,
-        now
-      );
+      await sql`
+        INSERT INTO gallery_image (
+          id, album_id, storage_key, public_url, alt_text, caption, display_order,
+          status, school_approved, identifiable_students, approval_reference, content_status, uploaded_by, created_at
+        ) VALUES (
+          ${img.id},
+          ${img.albumId},
+          ${img.storageKey},
+          ${img.publicUrl},
+          ${img.altText},
+          ${img.caption},
+          ${img.displayOrder},
+          ${img.status},
+          ${img.schoolApproved},
+          ${img.identifiableStudents},
+          ${img.approvalReference},
+          ${img.contentStatus},
+          ${adminId},
+          ${now}
+        )
+        ON CONFLICT (id) DO NOTHING
+      `;
     }
   }
 
-  const newsCount = db
-    .prepare('SELECT COUNT(*) as count FROM news_article')
-    .get() as { count: number };
+  const newsCountRows = await sql<{ count: string }[]>`
+    SELECT COUNT(*)::text as count FROM news_article
+  `;
+  const newsCount = Number(newsCountRows[0]?.count ?? 0);
 
-  if (newsCount.count === 0) {
+  if (newsCount === 0) {
     const articles = [
       {
         id: '30000000-0000-4000-8000-000000000001',
@@ -431,29 +448,28 @@ export function seedInitialDataIfEmpty(db: DatabaseSync): void {
       },
     ];
 
-    const insertArticle = db.prepare(
-      `INSERT INTO news_article (
-        id, title, slug, excerpt, body, featured_image_id, status, published_at,
-        author_id, seo_title, seo_description, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-
     for (const art of articles) {
-      insertArticle.run(
-        art.id,
-        art.title,
-        art.slug,
-        art.excerpt,
-        art.body,
-        art.featuredImageId,
-        art.status,
-        art.publishedAt,
-        adminId,
-        art.seoTitle,
-        art.seoDescription,
-        now,
-        now
-      );
+      await sql`
+        INSERT INTO news_article (
+          id, title, slug, excerpt, body, featured_image_id, status, published_at,
+          author_id, seo_title, seo_description, created_at, updated_at
+        ) VALUES (
+          ${art.id},
+          ${art.title},
+          ${art.slug},
+          ${art.excerpt},
+          ${art.body},
+          ${art.featuredImageId},
+          ${art.status},
+          ${art.publishedAt},
+          ${adminId},
+          ${art.seoTitle},
+          ${art.seoDescription},
+          ${now},
+          ${now}
+        )
+        ON CONFLICT (id) DO NOTHING
+      `;
     }
   }
 }

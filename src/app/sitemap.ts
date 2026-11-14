@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { listPublishedNews } from '@/server/services/cms-service';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
   const now = new Date();
 
@@ -17,7 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   try {
-    const publishedNews = listPublishedNews({ limit: 50 }).items;
+    const publishedNews = (await listPublishedNews({ limit: 50 })).items;
     const newsRoutes: MetadataRoute.Sitemap = publishedNews.map((post) => ({
       url: `${baseUrl}/news/${post.slug}`,
       lastModified: post.publishedAt ? new Date(post.publishedAt) : now,

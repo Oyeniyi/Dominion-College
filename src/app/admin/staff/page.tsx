@@ -7,13 +7,13 @@ import { listAdminUsers } from '@/server/services/cms-service';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminStaffPage() {
-  const session = getServerComponentAdminSession();
+export default async function AdminStaffPage() {
+  const session = await getServerComponentAdminSession();
   if (!session) {
     redirect('/admin/login');
   }
 
-  const users = listAdminUsers(session.user);
+  const users = await listAdminUsers(session.user);
 
   return (
     <AdminShell

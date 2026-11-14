@@ -13,9 +13,9 @@ interface NewsArticlePageProps {
   params: { slug: string };
 }
 
-export function generateMetadata({ params }: NewsArticlePageProps): Metadata {
+export async function generateMetadata({ params }: NewsArticlePageProps): Promise<Metadata> {
   try {
-    const post = getPublishedNewsBySlug(params.slug);
+    const post = await getPublishedNewsBySlug(params.slug);
     return {
       title: post.seoTitle || post.title,
       description: post.seoDescription || post.excerpt || undefined,
@@ -27,11 +27,11 @@ export function generateMetadata({ params }: NewsArticlePageProps): Metadata {
   }
 }
 
-export default function NewsArticlePage({ params }: NewsArticlePageProps) {
-  const settings = getPublicSiteSettings();
+export default async function NewsArticlePage({ params }: NewsArticlePageProps) {
+  const settings = await getPublicSiteSettings();
   let post;
   try {
-    post = getPublishedNewsBySlug(params.slug);
+    post = await getPublishedNewsBySlug(params.slug);
   } catch (err) {
     if (err instanceof NotFoundError) {
       notFound();

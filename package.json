@@ -10,12 +10,18 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate": "node --import tsx scripts/migrate.ts",
-    "db:seed": "node --import tsx scripts/seed.ts"
+    "db:migrate": "npx tsx scripts/migrate-postgres.ts",
+    "db:seed": "npx tsx scripts/seed-postgres.ts",
+    "db:verify": "npx tsx scripts/verify-postgres.ts",
+    "db:backup-sqlite": "npx tsx scripts/backup-sqlite.ts",
+    "db:migrate-data": "npx tsx scripts/migrate-sqlite-data.ts",
+    "media:migrate": "npx tsx scripts/migrate-media-to-supabase.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "lucide-react": "0.453.0",
     "next": "14.2.35",
+    "postgres": "^4.1.1",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
@@ -30,4 +36,3 @@
     "vitest": "2.1.9"
   }
 }
-

@@ -3,14 +3,8 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = config.externals || [];
-      config.externals.push({
-        'node:sqlite': 'commonjs node:sqlite',
-      });
-    }
-    return config;
+  experimental: {
+    serverComponentsExternalPackages: ['postgres'],
   },
   async headers() {
     return [

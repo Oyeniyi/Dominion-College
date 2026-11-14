@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest, context: RouteContext<{ slug: string }>) {
   const requestId = createRequestId();
   try {
-    const post = getPublishedNewsBySlug(context.params.slug);
+    const post = await getPublishedNewsBySlug(context.params.slug);
     return jsonResponse(
       { data: post, meta: { requestId } },
       { status: 200, requestId, cacheControl: 'public, max-age=0, s-maxage=60' },

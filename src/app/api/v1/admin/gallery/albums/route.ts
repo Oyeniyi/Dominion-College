@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req);
-    const albums = listAdminAlbums(user);
+    const { user } = await requireAuthenticatedAdminFromRequest(req);
+    const albums = await listAdminAlbums(user);
     return jsonResponse(
       { data: albums, meta: { total: albums.length, requestId } },
       { status: 200, requestId },
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    const album = createAdminAlbum(user, body);
+    const album = await createAdminAlbum(user, body);
     return jsonResponse({ data: album, meta: { requestId } }, { status: 201, requestId });
   } catch (error) {
     return handleRouteError(error, req, requestId);

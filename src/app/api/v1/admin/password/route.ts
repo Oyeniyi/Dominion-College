@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const requestId = createRequestId();
   try {
-    const { user } = requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
+    const { user } = await requireAuthenticatedAdminFromRequest(req, { requireCsrf: true });
     let body: unknown;
     try {
       body = await req.json();
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       throw new BadRequestError('Invalid JSON request payload.');
     }
 
-    changeOwnAdminPassword(user, body);
+    await changeOwnAdminPassword(user, body);
     logSecurityEvent({
       category: 'ADMIN_PASSWORD_CHANGED',
       outcome: 'success',
