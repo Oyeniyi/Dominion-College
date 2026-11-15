@@ -81,7 +81,7 @@ export function assertValidEnquiryStatusTransition(
 
 const ALLOWED_PUBLICATION_TRANSITIONS: Record<PublicationStatus, readonly PublicationStatus[]> = {
   draft: ['draft', 'published', 'archived'],
-  published: ['published', 'unpublished', 'archived'],
+  published: ['published', 'draft', 'unpublished', 'archived'],
   unpublished: ['unpublished', 'draft', 'published', 'archived'],
   archived: ['archived', 'draft', 'unpublished'],
 };

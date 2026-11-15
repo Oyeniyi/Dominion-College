@@ -20,6 +20,7 @@ import {
 import {
   assertAuthorized,
   assertValidEnquiryStatusTransition,
+  assertValidPublicationTransition,
   assertGalleryImagePublishable,
 } from '../src/domain/permissions.ts';
 import {
@@ -211,6 +212,10 @@ describe('Dominion College — Validation, Security & RBAC Unit Tests', () => {
         approvalReference: 'CONSENT-2026-009',
       }),
     );
+
+    assert.doesNotThrow(() => assertValidPublicationTransition('published', 'published'));
+    assert.doesNotThrow(() => assertValidPublicationTransition('published', 'draft'));
+    assert.doesNotThrow(() => assertValidPublicationTransition('published', 'unpublished'));
   });
 
   it('rejects secret keys in public site settings updates and validates WhatsApp URLs', () => {

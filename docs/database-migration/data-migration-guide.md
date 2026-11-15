@@ -20,18 +20,24 @@ DATABASE_URL="postgresql://..." npm run db:migrate
 
 ## 3. Dry-Run Data Transfer
 
-Preview record counts and foreign-key ordering without writing to PostgreSQL:
+Preview record counts and validate JSON columns from SQLite without modifying PostgreSQL or SQLite:
 
 ```bash
-DATABASE_URL="postgresql://..." SQLITE_SOURCE_PATH="./data/dominion_college.sqlite" npm run db:migrate-data -- --dry-run
+SQLITE_SOURCE_PATH="./data/dominion_college.sqlite" npm run db:migrate-data -- --dry-run
 ```
 
 ## 4. Execute Transactional Data Transfer
 
-Run `scripts/migrate-sqlite-data.ts` in foreign-key dependency order (`admin_user` → `gallery_album` → `gallery_image` → `news_article` → `admissions_enquiry` → `site_settings`), using `ON CONFLICT DO NOTHING` so existing PostgreSQL rows are never overwritten:
+Run `scripts/migrate-sqlite-data.ts` in foreign-key dependency order (`admin_user` → `gallery_album` → `gallery_image` → `news_article` → `admissions_enquiry` → `site_settings`), using `ON CONFLICT DO NOTHING` across all tables (including `site_settings`) so existing PostgreSQL institutional settings are never silently overwritten:
 
 ```bash
 DATABASE_URL="postgresql://..." SQLITE_SOURCE_PATH="./data/dominion_college.sqlite" npm run db:migrate-data
+```
+
+If you intentionally need to replace existing PostgreSQL `site_settings` with the SQLite `site_settings` row, pass `--overwrite-settings` explicitly:
+
+```bash
+DATABASE_URL="postgresql://..." SQLITE_SOURCE_PATH="./data/dominion_college.sqlite" npm run db:migrate-data -- --overwrite-settings
 ```
 
 ## 5. Verify Migration

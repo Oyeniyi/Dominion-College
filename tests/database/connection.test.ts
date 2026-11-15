@@ -29,7 +29,7 @@ describe('PostgreSQL Configuration & Connection Manager', () => {
     assert.equal(cfg.maxConnections, 1);
   });
 
-  it('defaults SSL to prefer for localhost development connections', () => {
+  it('defaults SSL to prefer for localhost development connections and honors DATABASE_SSL_MODE', () => {
     process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/dominion_college';
     (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
     delete process.env.DATABASE_SSL_MODE;
@@ -37,6 +37,12 @@ describe('PostgreSQL Configuration & Connection Manager', () => {
     const cfg = getPostgresConfig();
     assert.equal(cfg.ssl, 'prefer');
     assert.equal(cfg.maxConnections, 5);
+
+    process.env.DATABASE_SSL_MODE = 'require';
+    assert.equal(getPostgresConfig().ssl, 'require');
+
+    process.env.DATABASE_SSL_MODE = 'disable';
+    assert.equal(getPostgresConfig().ssl, false);
   });
 
   it.runIf(hasPostgresTestDb)('connects to PostgreSQL and executes SELECT 1', async () => {

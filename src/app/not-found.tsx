@@ -7,10 +7,14 @@ import { mapPublicSiteSettings } from '@/server/db/repositories/settings.reposit
 
 export default async function NotFoundPage() {
   let settings;
-  try {
-    settings = await getPublicSiteSettings();
-  } catch {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     settings = mapPublicSiteSettings(null);
+  } else {
+    try {
+      settings = await getPublicSiteSettings();
+    } catch {
+      settings = mapPublicSiteSettings(null);
+    }
   }
 
   return (

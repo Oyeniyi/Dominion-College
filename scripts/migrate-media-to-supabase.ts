@@ -19,6 +19,7 @@ interface MigrationReport {
   skippedPlaceholder: number;
   skippedExisting: number;
   duplicatesDetected: number;
+  duplicates: Array<{ id: string; storageKey: string; duplicateOf: string }>;
   missingSourceFiles: string[];
   errors: Array<{ id: string; storageKey: string; error: string }>;
 }
@@ -52,6 +53,7 @@ async function main(): Promise<void> {
     skippedPlaceholder: 0,
     skippedExisting: 0,
     duplicatesDetected: 0,
+    duplicates: [],
     missingSourceFiles: [],
     errors: [],
   };
@@ -114,16 +116,25 @@ async function main(): Promise<void> {
         const contentType = MIME_BY_FORMAT[format] || 'application/octet-stream';
         const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
 
-        if (seenHashes.has(sha256)) {
+        const existingKeyForHash = seenHashes.get(sha256);
+        if (existingKeyForHash) {
           report.duplicatesDetected += 1;
+          report.duplicates.push({
+            id: row.id,
+            storageKey: row.storage_key,
+            duplicateOf: existingKeyForHash,
+          });
         } else {
           seenHashes.set(sha256, row.storage_key);
         }
 
         if (!overwrite) {
-          const { data: existingList } = await supabase.storage
+          const { data: existingList, error: listErr } = await supabase.storage
             .from(stagingBucket)
             .list('gallery', { search: filename, limit: 1 });
+          if (listErr) {
+            throw new Error(`Failed to check existing staging object: ${listErr.message}`);
+          }
           if (existingList && existingList.some((item) => item.name === filename)) {
             report.skippedExisting += 1;
             continue;
@@ -153,6 +164,9 @@ async function main(): Promise<void> {
                 upsert: true,
               });
             if (pubErr) {
+              if (!overwrite) {
+                await supabase.storage.from(stagingBucket).remove([objectPath]).catch(() => {});
+              }
               throw new Error(`Public upload failed: ${pubErr.message}`);
             }
 
@@ -160,11 +174,19 @@ async function main(): Promise<void> {
               .from(publicBucket)
               .getPublicUrl(objectPath);
 
-            await sql`
-              UPDATE gallery_image
-              SET public_url = ${pubUrlData.publicUrl}
-              WHERE id = ${row.id}
-            `;
+            try {
+              await sql`
+                UPDATE gallery_image
+                SET public_url = ${pubUrlData.publicUrl}
+                WHERE id = ${row.id}
+              `;
+            } catch (dbErr) {
+              if (!overwrite) {
+                await supabase.storage.from(publicBucket).remove([objectPath]).catch(() => {});
+                await supabase.storage.from(stagingBucket).remove([objectPath]).catch(() => {});
+              }
+              throw dbErr;
+            }
           }
         }
 

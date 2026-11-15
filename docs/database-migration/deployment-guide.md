@@ -20,6 +20,7 @@ Configure the following environment variables in **Vercel â†’ Project Settings â
 |---|---|---|
 | `NODE_ENV` | Yes | Set to `production` on Vercel Production. |
 | `DATABASE_URL` | Yes | Supabase PostgreSQL connection string (`?pgbouncer=true` on port `6543` for Vercel runtime). |
+| `DATABASE_SSL_MODE` | Optional | SSL mode (`require` \| `prefer` \| `disable`). Defaults to `require` for remote hosts and `prefer` for `localhost`. |
 | `SESSION_SECRET` | Yes | Cryptographically random secret (>= 32 characters) for signing `HttpOnly` admin session cookies. |
 | `NEXT_PUBLIC_SITE_URL` | Yes | Canonical public URL (e.g., `https://dominioncollege.edu.ng`). |
 | `SCHOOL_TIMEZONE` | Recommended | `Africa/Lagos` |

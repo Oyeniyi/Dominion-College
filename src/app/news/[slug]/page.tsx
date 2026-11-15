@@ -2,8 +2,9 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Calendar, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Calendar, ArrowLeft, ArrowRight, Pencil } from 'lucide-react';
 import { PageShell } from '@/components/PageShell';
+import { getServerComponentAdminSession } from '@/server/auth/session';
 import { getPublishedNewsBySlug, getPublicSiteSettings } from '@/server/services/cms-service';
 import { NotFoundError } from '@/domain/errors';
 
@@ -28,7 +29,10 @@ export async function generateMetadata({ params }: NewsArticlePageProps): Promis
 }
 
 export default async function NewsArticlePage({ params }: NewsArticlePageProps) {
-  const settings = await getPublicSiteSettings();
+  const [settings, adminSession] = await Promise.all([
+    getPublicSiteSettings(),
+    getServerComponentAdminSession(),
+  ]);
   let post;
   try {
     post = await getPublishedNewsBySlug(params.slug);
@@ -42,7 +46,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
   return (
     <PageShell settings={settings}>
       <article className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/news"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-primary hover:underline"
@@ -50,6 +54,15 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span>Back to All Announcements</span>
           </Link>
+          {adminSession && (
+            <Link
+              href={`/admin/news?slug=${encodeURIComponent(post.slug)}`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-brand-border bg-brand-surface-tint px-3.5 py-1.5 text-xs font-bold text-brand-primary transition hover:bg-purple-100"
+            >
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Edit Published Article</span>
+            </Link>
+          )}
         </div>
 
         <header className="space-y-4">

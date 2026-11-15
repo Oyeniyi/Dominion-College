@@ -1,27 +1,67 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Plus, Trash2, Eye, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import type { NewsArticle, PublicationStatus } from '@/domain/types';
+import React, { useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import {
+  Plus,
+  Trash2,
+  Eye,
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  X,
+} from 'lucide-react';
+import type { GalleryImage, NewsArticle, PublicationStatus } from '@/domain/types';
 
 interface NewsManagerProps {
   initialPosts: NewsArticle[];
+  galleryImages?: GalleryImage[];
+  initialEditId?: string;
+  initialEditSlug?: string;
   csrfToken: string;
 }
 
-export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
-  const [posts, setPosts] = useState<NewsArticle[]>(initialPosts);
-  const [editingId, setEditingId] = useState<string | null>(null);
+export function NewsManager({
+  initialPosts,
+  galleryImages = [],
+  initialEditId,
+  initialEditSlug,
+  csrfToken,
+}: NewsManagerProps) {
+  const initialSelected = useMemo(() => {
+    if (initialEditId) {
+      return initialPosts.find((p) => p.id === initialEditId) ?? null;
+    }
+    if (initialEditSlug) {
+      return initialPosts.find((p) => p.slug === initialEditSlug) ?? null;
+    }
+    return null;
+  }, [initialPosts, initialEditId, initialEditSlug]);
 
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [excerpt, setExcerpt] = useState('');
-  const [body, setBody] = useState('<p></p>');
-  const [status, setStatus] = useState<PublicationStatus>('draft');
+  const editorRef = useRef<HTMLFormElement | null>(null);
+  const [posts, setPosts] = useState<NewsArticle[]>(initialPosts);
+  const [editingId, setEditingId] = useState<string | null>(initialSelected?.id ?? null);
+
+  const [title, setTitle] = useState(initialSelected?.title ?? '');
+  const [slug, setSlug] = useState(initialSelected?.slug ?? '');
+  const [excerpt, setExcerpt] = useState(initialSelected?.excerpt ?? '');
+  const [body, setBody] = useState(initialSelected?.body ?? '<p></p>');
+  const [featuredImageId, setFeaturedImageId] = useState(
+    initialSelected?.featuredImageId ?? ''
+  );
+  const [seoTitle, setSeoTitle] = useState(initialSelected?.seoTitle ?? '');
+  const [seoDescription, setSeoDescription] = useState(initialSelected?.seoDescription ?? '');
+  const [status, setStatus] = useState<PublicationStatus>(initialSelected?.status ?? 'draft');
 
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const eligibleImages = useMemo(
+    () => galleryImages.filter((img) => img.status === 'published' && img.schoolApproved),
+    [galleryImages]
+  );
 
   function startNewPost() {
     setEditingId(null);
@@ -29,6 +69,9 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
     setSlug('');
     setExcerpt('');
     setBody('<p>Enter announcement details here...</p>');
+    setFeaturedImageId('');
+    setSeoTitle('');
+    setSeoDescription('');
     setStatus('draft');
     setPreviewHtml(null);
     setFeedback(null);
@@ -40,9 +83,13 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
     setSlug(post.slug);
     setExcerpt(post.excerpt || '');
     setBody(post.body);
+    setFeaturedImageId(post.featuredImageId || '');
+    setSeoTitle(post.seoTitle || '');
+    setSeoDescription(post.seoDescription || '');
     setStatus(post.status);
     setPreviewHtml(null);
     setFeedback(null);
+    editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function handlePreview() {
@@ -58,6 +105,9 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
         slug: slug || undefined,
         excerpt: excerpt || null,
         body,
+        featuredImageId: featuredImageId || null,
+        seoTitle: seoTitle || null,
+        seoDescription: seoDescription || null,
         status,
       }),
     });
@@ -93,6 +143,9 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
           slug: slug || undefined,
           excerpt: excerpt || null,
           body,
+          featuredImageId: featuredImageId || null,
+          seoTitle: seoTitle || null,
+          seoDescription: seoDescription || null,
           status,
         }),
       });
@@ -114,6 +167,8 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
         setEditingId(saved.id);
       }
 
+      setSlug(saved.slug);
+      setStatus(saved.status);
       setFeedback({
         type: 'ok',
         text: `Article "${saved.title}" saved (${saved.status}).`,
@@ -185,7 +240,7 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
                   onClick={() => startEditPost(post)}
                   className="text-xs font-bold text-brand-primary hover:underline"
                 >
-                  Edit / Change Status
+                  Edit Article
                 </button>
                 <button
                   type="button"
@@ -204,21 +259,45 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
       {/* Right Editor */}
       <div className="lg:col-span-7">
         <form
+          ref={editorRef}
           onSubmit={handleSave}
           className="space-y-5 rounded-2xl border border-brand-border bg-white p-6 shadow-card"
         >
-          <div className="flex items-center justify-between border-b border-brand-border pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-border pb-4">
             <h2 className="font-serif text-xl font-bold text-brand-primary-dark">
               {editingId ? 'Edit News Article' : 'Create News Article'}
             </h2>
-            <button
-              type="button"
-              onClick={handlePreview}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-surface-tint px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-purple-100"
-            >
-              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Sanitized Preview</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {editingId && status === 'published' && slug && (
+                <Link
+                  href={`/news/${encodeURIComponent(slug)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-white px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-brand-surface-tint"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>View Live</span>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={handlePreview}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-border bg-brand-surface-tint px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-purple-100"
+              >
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Sanitized Preview</span>
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={startNewPost}
+                  className="inline-flex items-center gap-1 rounded-lg border border-brand-border bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-ink-muted hover:bg-gray-50"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Cancel</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {feedback && (
@@ -291,6 +370,28 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
 
           <div>
             <label
+              htmlFor="news-featured-image"
+              className="block text-xs font-bold uppercase text-brand-ink"
+            >
+              Featured Gallery Image (optional, approved &amp; published only)
+            </label>
+            <select
+              id="news-featured-image"
+              value={featuredImageId}
+              onChange={(e) => setFeaturedImageId(e.target.value)}
+              className="mt-1 block w-full rounded-xl border border-brand-border bg-white px-3 py-2 text-sm"
+            >
+              <option value="">No featured image</option>
+              {eligibleImages.map((img) => (
+                <option key={img.id} value={img.id}>
+                  {img.caption || img.altText}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
               htmlFor="news-summary"
               className="block text-xs font-bold uppercase text-brand-ink"
             >
@@ -317,6 +418,41 @@ export function NewsManager({ initialPosts, csrfToken }: NewsManagerProps) {
               onChange={(e) => setBody(e.target.value)}
               className="mt-1 block w-full rounded-xl border border-brand-border px-3.5 py-2 font-mono text-xs"
             />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="news-seo-title"
+                className="block text-xs font-bold uppercase text-brand-ink"
+              >
+                SEO Title (optional)
+              </label>
+              <input
+                id="news-seo-title"
+                type="text"
+                value={seoTitle}
+                onChange={(e) => setSeoTitle(e.target.value)}
+                placeholder="Defaults to article title"
+                className="mt-1 block w-full rounded-xl border border-brand-border px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="news-seo-description"
+                className="block text-xs font-bold uppercase text-brand-ink"
+              >
+                SEO Description (optional)
+              </label>
+              <input
+                id="news-seo-description"
+                type="text"
+                value={seoDescription}
+                onChange={(e) => setSeoDescription(e.target.value)}
+                placeholder="Defaults to article excerpt"
+                className="mt-1 block w-full rounded-xl border border-brand-border px-3 py-2 text-sm"
+              />
+            </div>
           </div>
 
           {previewHtml && (

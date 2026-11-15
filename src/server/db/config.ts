@@ -41,10 +41,12 @@ export function getPostgresConfig(env: NodeJS.ProcessEnv = process.env): Postgre
   }
 
   const localHost = isLocalHostname(connectionString);
-  const sslMode = (env.DATABASE_SSL || '').trim().toLowerCase();
+  const sslMode = (env.DATABASE_SSL_MODE || '').trim().toLowerCase();
   let ssl: PostgresConfig['ssl'] = localHost ? 'prefer' : 'require';
   if (sslMode === 'disable' || sslMode === 'false') {
     ssl = false;
+  } else if (sslMode === 'prefer') {
+    ssl = 'prefer';
   } else if (sslMode === 'require') {
     ssl = 'require';
   }
