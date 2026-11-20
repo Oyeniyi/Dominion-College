@@ -73,7 +73,7 @@ export async function queryPublishedGalleryImages(params: {
   const sql = await getDatabase();
   const rows = params.albumSlug
     ? await sql<Record<string, unknown>[]>`
-        SELECT gi.id, gi.public_url, gi.alt_text, gi.caption, gi.display_order, ga.title AS album_title
+        SELECT gi.id, gi.album_id, gi.public_url, gi.alt_text, gi.caption, gi.display_order, gi.content_status, gi.created_at, ga.title AS album_title
         FROM gallery_image gi
         LEFT JOIN gallery_album ga ON ga.id = gi.album_id
         WHERE gi.status = 'published'
@@ -84,7 +84,7 @@ export async function queryPublishedGalleryImages(params: {
         LIMIT ${params.limit + 1} OFFSET ${params.offset}
       `
     : await sql<Record<string, unknown>[]>`
-        SELECT gi.id, gi.public_url, gi.alt_text, gi.caption, gi.display_order, ga.title AS album_title
+        SELECT gi.id, gi.album_id, gi.public_url, gi.alt_text, gi.caption, gi.display_order, gi.content_status, gi.created_at, ga.title AS album_title
         FROM gallery_image gi
         LEFT JOIN gallery_album ga ON ga.id = gi.album_id
         WHERE gi.status = 'published'

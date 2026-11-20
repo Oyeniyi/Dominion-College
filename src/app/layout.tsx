@@ -8,26 +8,37 @@ export const metadata: Metadata = {
     template: '%s | Dominion College, Oba-Ile, Akure',
   },
   description:
-    'Official website of Dominion College, Oba-Ile, Akure, Ondo State, Nigeria. Co-educational Day and Boarding secondary school (JSS 1 – SSS 3). Motto: THE SECERET OF WISDOM IS GOD.',
+    'Official website of Dominion College, Oba-Ile, Akure, Ondo State, Nigeria. Co-educational Day Care, Kindergarten (KG 1–2), Nursery (1–2), Primary (1–5), Junior Secondary (JSS 1–3), and Senior Secondary (SSS 1–3). Motto: THE SECERET OF WISDOM IS GOD.',
   keywords: [
     'Dominion College',
     'Oba-Ile',
     'Akure',
     'Ondo State',
+    'Primary School in Oba-Ile Akure',
     'Secondary School in Akure',
-    'Day and Boarding School',
+    'Day Care and Nursery Akure',
     'JSS',
     'SSS',
     'Admissions',
   ],
+  icons: {
+    icon: '/images/dominion_logo.jpg',
+    apple: '/images/dominion_logo.jpg',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_NG',
     siteName: 'Dominion College, Oba-Ile, Akure',
     title: 'Dominion College | Oba-Ile, Akure, Ondo State',
     description:
-      'Co-educational Day and Boarding secondary education in Oba-Ile, Akure, Ondo State. Guided by our motto: THE SECERET OF WISDOM IS GOD.',
+      'Co-educational Early Years, Primary, Junior Secondary, and Senior Secondary education in Oba-Ile, Akure, Ondo State. Guided by our motto: THE SECERET OF WISDOM IS GOD.',
     images: [
+      {
+        url: '/images/secondary-school-front-view-1.jpeg',
+        width: 1200,
+        height: 800,
+        alt: 'Dominion College Campus Front View — Oba-Ile, Akure',
+      },
       {
         url: '/images/dominion_logo.jpg',
         width: 500,
@@ -35,6 +46,13 @@ export const metadata: Metadata = {
         alt: 'Dominion College, Oba-Ile, Akure Official Crest',
       },
     ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Dominion College | Oba-Ile, Akure, Ondo State',
+    description:
+      'Early Years, Primary (1–5), JSS (1–3), and SSS (1–3) education in Oba-Ile, Akure, Ondo State.',
+    images: ['/images/secondary-school-front-view-1.jpeg'],
   },
 };
 

@@ -14,6 +14,16 @@ export const metadata: Metadata = {
   title: 'About Dominion College',
   description:
     'Learn about the identity, mission, vision, core values, and educational divisions (Day Care, KG 1–2, Nursery 1–2, Primary 1–5, JSS 1–3, SSS 1–3) of Dominion College, Oba-Ile, Akure.',
+  openGraph: {
+    images: [
+      {
+        url: '/images/assembly-ground.jpeg',
+        width: 1200,
+        height: 800,
+        alt: 'Students gathered on the Dominion College assembly ground in Oba-Ile, Akure',
+      },
+    ],
+  },
 };
 
 export default async function AboutPage() {
@@ -202,11 +212,11 @@ export default async function AboutPage() {
               </div>
               <div className="lg:col-span-5">
                 <img
-                  src="/placeholders/library-study.svg"
-                  alt="Study and Library Environment Illustration"
+                  src="/images/assembly-ground.jpeg"
+                  alt="Students gathered on the Dominion College assembly ground in Oba-Ile, Akure"
                   width={500}
                   height={330}
-                  className="w-full rounded-xl border border-brand-border object-cover"
+                  className="h-64 w-full rounded-xl border border-brand-border object-cover"
                 />
               </div>
             </div>

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Pencil,
   X,
 } from 'lucide-react';
 import type { GalleryImage, NewsArticle, PublicationStatus } from '@/domain/types';
@@ -238,9 +239,10 @@ export function NewsManager({
                 <button
                   type="button"
                   onClick={() => startEditPost(post)}
-                  className="text-xs font-bold text-brand-primary hover:underline"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-surface-tint px-3 py-1.5 text-xs font-bold text-brand-primary transition hover:bg-purple-100"
                 >
-                  Edit Article
+                  <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Edit</span>
                 </button>
                 <button
                   type="button"

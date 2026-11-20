@@ -14,7 +14,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Campus Photo Gallery',
   description:
-    'Explore campus facilities, classrooms, laboratories, library spaces, and student activities at Dominion College, Oba-Ile, Akure.',
+    'Explore campus buildings, assembly life, special programmes, school instrumentalists, and student activities at Dominion College, Oba-Ile, Akure.',
+  openGraph: {
+    images: [
+      {
+        url: '/images/students-in-school-temple.jpeg',
+        width: 1200,
+        height: 800,
+        alt: 'Dominion College students gathered in the school temple',
+      },
+    ],
+  },
 };
 
 export default async function GalleryPage() {

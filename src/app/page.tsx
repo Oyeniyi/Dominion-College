@@ -95,20 +95,39 @@ export default async function HomePage() {
 
             <div className="lg:col-span-5">
               <div className="relative overflow-hidden rounded-2xl border-2 border-amber-400/50 bg-purple-950/60 p-3 shadow-2xl">
-                <img
-                  src="/placeholders/campus-hero.svg"
-                  alt="Dominion College Campus Illustration — Oba-Ile, Akure"
-                  width={600}
-                  height={400}
-                  className="h-auto w-full rounded-xl object-cover"
-                />
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <div className="relative overflow-hidden rounded-xl">
+                    <img
+                      src="/images/primary-school-front-view.jpeg"
+                      alt="Dominion College Primary School Front View — Oba-Ile, Akure"
+                      width={400}
+                      height={320}
+                      className="h-52 w-full object-cover sm:h-64"
+                    />
+                    <span className="absolute bottom-2 left-2 rounded-md bg-purple-950/85 px-2 py-0.5 text-[10px] font-bold text-amber-300 backdrop-blur-sm">
+                      Primary School
+                    </span>
+                  </div>
+                  <div className="relative overflow-hidden rounded-xl">
+                    <img
+                      src="/images/secondary-school-front-view-1.jpeg"
+                      alt="Dominion College Secondary School Front View — Oba-Ile, Akure"
+                      width={400}
+                      height={320}
+                      className="h-52 w-full object-cover sm:h-64"
+                    />
+                    <span className="absolute bottom-2 left-2 rounded-md bg-purple-950/85 px-2 py-0.5 text-[10px] font-bold text-amber-300 backdrop-blur-sm">
+                      Secondary School
+                    </span>
+                  </div>
+                </div>
                 <div className="mt-3 flex items-center justify-between px-2 py-1 text-xs text-purple-200">
                   <span className="inline-flex items-center gap-1.5 font-semibold text-amber-300">
                     <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                     Oba-Ile, Akure, Ondo State
                   </span>
                   <span className="rounded bg-purple-900/90 px-2 py-0.5 text-[11px] text-purple-200">
-                    Campus Visual Preview
+                    Primary &amp; Secondary
                   </span>
                 </div>
               </div>

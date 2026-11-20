@@ -17,9 +17,26 @@ interface NewsArticlePageProps {
 export async function generateMetadata({ params }: NewsArticlePageProps): Promise<Metadata> {
   try {
     const post = await getPublishedNewsBySlug(params.slug);
+    const ogImage = post.featuredImage?.imageUrl || '/images/secondary-school-front-view-1.jpeg';
     return {
       title: post.seoTitle || post.title,
       description: post.seoDescription || post.excerpt || undefined,
+      openGraph: {
+        title: post.seoTitle || post.title,
+        description: post.seoDescription || post.excerpt || undefined,
+        images: [
+          {
+            url: ogImage,
+            alt: post.featuredImage?.altText || post.title,
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: post.seoTitle || post.title,
+        description: post.seoDescription || post.excerpt || undefined,
+        images: [ogImage],
+      },
     };
   } catch {
     return {

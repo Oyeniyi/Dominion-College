@@ -10,7 +10,17 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'News & Announcements',
   description:
-    'Read official announcements, academic calendar notices, and school news from Dominion College, Oba-Ile, Akure.',
+    'Read official announcements, special programmes, sensitization events, and school news from Dominion College, Oba-Ile, Akure.',
+  openGraph: {
+    images: [
+      {
+        url: '/images/nigeria-police-sensitization.jpeg',
+        width: 1200,
+        height: 800,
+        alt: 'Nigeria Police Force sensitization programme at Dominion College, Oba-Ile, Akure',
+      },
+    ],
+  },
 };
 
 export default async function NewsPage() {

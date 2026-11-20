@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Trash2, Upload, CheckCircle2, AlertCircle, Loader2, Shield } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Trash2, Upload, CheckCircle2, AlertCircle, Loader2, Shield, Pencil, X } from 'lucide-react';
 import type {
   ContentVerificationStatus,
   GalleryAlbum,
@@ -30,8 +30,10 @@ export function GalleryManager({
   initialImages,
   csrfToken,
 }: GalleryManagerProps) {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [albums] = useState<GalleryAlbum[]>(initialAlbums);
   const [images, setImages] = useState<AdminGalleryImageView[]>(initialImages);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [altText, setAltText] = useState('');
   const [caption, setCaption] = useState('');
@@ -47,12 +49,78 @@ export function GalleryManager({
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
-  async function handleAddImage(e: React.FormEvent) {
+  function resetForm() {
+    setEditingId(null);
+    setAltText('');
+    setCaption('');
+    setAlbumId(initialAlbums[0]?.id ?? '');
+    setContentStatus('placeholder');
+    setStatus('draft');
+    setSchoolApproved(true);
+    setIdentifiableStudents(false);
+    setApprovalReference('');
+    setSelectedFile(null);
+    setFeedback(null);
+  }
+
+  function startEditImage(img: AdminGalleryImageView) {
+    setEditingId(img.id);
+    setAltText(img.altText);
+    setCaption(img.caption || '');
+    setAlbumId(img.albumId || '');
+    setContentStatus(img.contentStatus);
+    setStatus(img.status);
+    setSchoolApproved(img.schoolApproved);
+    setIdentifiableStudents(img.identifiableStudents);
+    setApprovalReference(img.approvalReference || '');
+    setSelectedFile(null);
+    setFeedback(null);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setFeedback(null);
 
     try {
+      if (editingId) {
+        const res = await fetch(`/api/v1/admin/gallery/images/${editingId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken,
+          },
+          body: JSON.stringify({
+            albumId: albumId || null,
+            altText,
+            caption: caption || null,
+            contentStatus,
+            status,
+            schoolApproved,
+            identifiableStudents,
+            approvalReference: approvalReference || null,
+          }),
+        });
+
+        const payload = await res.json();
+        if (!res.ok) {
+          setFeedback({
+            type: 'err',
+            text: payload?.error?.detail || 'Failed to update gallery item.',
+          });
+          return;
+        }
+
+        const updated: AdminGalleryImageView = payload.data;
+        setImages((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        setFeedback({
+          type: 'ok',
+          text: `Gallery item "${updated.caption || updated.altText}" updated (${updated.status}).`,
+        });
+        return;
+      }
+
       let res: Response;
       if (selectedFile) {
         const formData = new FormData();
@@ -154,21 +222,37 @@ export function GalleryManager({
     });
     if (res.ok) {
       setImages((prev) => prev.filter((item) => item.id !== imageId));
+      if (editingId === imageId) {
+        resetForm();
+      }
       setFeedback({ type: 'ok', text: 'Gallery item deleted.' });
     }
   }
 
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-      {/* Left Form: Upload or Add Placeholder */}
+      {/* Left Form: Add or Edit Gallery Item */}
       <div className="lg:col-span-5">
         <form
-          onSubmit={handleAddImage}
+          ref={formRef}
+          onSubmit={handleSubmit}
           className="space-y-4 rounded-2xl border border-brand-border bg-white p-6 shadow-card"
         >
-          <h2 className="font-serif text-xl font-bold text-brand-primary-dark">
-            Add Gallery Visual or Upload Photo
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-serif text-xl font-bold text-brand-primary-dark">
+              {editingId ? 'Edit Gallery Item' : 'Add Gallery Visual or Upload Photo'}
+            </h2>
+            {editingId && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="inline-flex items-center gap-1 rounded-lg border border-brand-border bg-white px-2.5 py-1.5 text-xs font-semibold text-brand-ink-muted hover:bg-gray-50"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Cancel</span>
+              </button>
+            )}
+          </div>
 
           <div className="flex items-start gap-2 rounded-xl bg-brand-surface-tint p-3 text-xs text-brand-primary-dark">
             <Shield className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" aria-hidden="true" />
@@ -229,25 +313,27 @@ export function GalleryManager({
             </select>
           </div>
 
-          <div>
-            <label htmlFor="gal-file" className="block text-xs font-bold uppercase text-brand-ink">
-              Upload Image File (JPEG, PNG, WebP, or Safe SVG)
-            </label>
-            <input
-              id="gal-file"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/svg+xml"
-              onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full text-xs text-brand-ink-muted"
-            />
-          </div>
+          {!editingId && (
+            <>
+              <div>
+                <label htmlFor="gal-file" className="block text-xs font-bold uppercase text-brand-ink">
+                  Upload Image File (JPEG, PNG, WebP, or Safe SVG)
+                </label>
+                <input
+                  id="gal-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+                  className="mt-1 block w-full text-xs text-brand-ink-muted"
+                />
+              </div>
 
-          {!selectedFile && (
-            <div>
-              <label
-                htmlFor="gal-placeholder"
-                className="block text-xs font-bold uppercase text-brand-ink"
-              >
+              {!selectedFile && (
+                <div>
+                  <label
+                    htmlFor="gal-placeholder"
+                    className="block text-xs font-bold uppercase text-brand-ink"
+                  >
                 Or Select Branded Placeholder Illustration
               </label>
               <select
@@ -263,6 +349,8 @@ export function GalleryManager({
                 ))}
               </select>
             </div>
+              )}
+            </>
           )}
 
           <div>
@@ -368,7 +456,7 @@ export function GalleryManager({
             ) : (
               <Upload className="h-4 w-4" aria-hidden="true" />
             )}
-            <span>Add to Gallery</span>
+            <span>{editingId ? 'Save Gallery Changes' : 'Add to Gallery'}</span>
           </button>
         </form>
       </div>
@@ -379,7 +467,11 @@ export function GalleryManager({
           {images.map((img) => (
             <div
               key={img.id}
-              className="flex flex-col justify-between overflow-hidden rounded-2xl border border-brand-border bg-white shadow-card"
+              className={`flex flex-col justify-between overflow-hidden rounded-2xl border shadow-card transition ${
+                editingId === img.id
+                  ? 'border-brand-primary bg-brand-surface-tint'
+                  : 'border-brand-border bg-white'
+              }`}
             >
               <div>
                 <img
@@ -403,14 +495,24 @@ export function GalleryManager({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-brand-border px-4 py-3">
-                <button
-                  type="button"
-                  onClick={() => handleTogglePublish(img)}
-                  className="text-xs font-bold text-brand-primary hover:underline"
-                >
-                  {img.status === 'published' ? 'Unpublish' : 'Publish to Website'}
-                </button>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-brand-border px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => startEditImage(img)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-surface-tint px-2.5 py-1 text-xs font-bold text-brand-primary transition hover:bg-purple-100"
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePublish(img)}
+                    className="text-xs font-bold text-brand-primary hover:underline"
+                  >
+                    {img.status === 'published' ? 'Unpublish' : 'Publish'}
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => handleDelete(img.id)}

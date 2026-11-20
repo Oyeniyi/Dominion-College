@@ -14,6 +14,16 @@ export const metadata: Metadata = {
   title: 'Academics (Day Care, KG, Nursery, Primary, JSS & SSS)',
   description:
     'Explore Day Care, KG 1–2, Nursery 1–2, Primary 1–5, Junior Secondary (JSS 1–3), and Senior Secondary (SSS 1–3) programmes at Dominion College, Oba-Ile, Akure.',
+  openGraph: {
+    images: [
+      {
+        url: '/images/primary-school-front-view.jpeg',
+        width: 1200,
+        height: 800,
+        alt: 'Dominion College Primary School Front View — Oba-Ile, Akure',
+      },
+    ],
+  },
 };
 
 export default async function AcademicsPage() {
@@ -95,6 +105,13 @@ export default async function AcademicsPage() {
                 <p className="text-base leading-relaxed text-brand-ink-muted">
                   {academics.primarySchool.summary}
                 </p>
+                <img
+                  src="/images/primary-school-front-view.jpeg"
+                  alt="Dominion College Primary School Front View — Oba-Ile, Akure"
+                  width={560}
+                  height={360}
+                  className="mt-4 h-60 w-full rounded-2xl border border-brand-border object-cover shadow-sm"
+                />
               </div>
 
               <div className="rounded-2xl border border-brand-border bg-white p-6 shadow-card sm:p-8 lg:col-span-6">
@@ -137,11 +154,11 @@ export default async function AcademicsPage() {
                 {academics.juniorSecondary.summary}
               </p>
               <img
-                src="/placeholders/classroom-learning.svg"
-                alt="Junior Secondary Classroom Environment Illustration"
+                src="/images/secondary-school-front-view-2.jpeg"
+                alt="Dominion College Secondary School Building — Oba-Ile, Akure"
                 width={560}
                 height={360}
-                className="mt-4 w-full rounded-2xl border border-brand-border object-cover shadow-sm"
+                className="mt-4 h-60 w-full rounded-2xl border border-brand-border object-cover shadow-sm"
               />
             </div>
 
@@ -271,11 +288,11 @@ export default async function AcademicsPage() {
           </div>
           <div className="lg:col-span-5">
             <img
-              src="/placeholders/science-lab.svg"
-              alt="Science and Practical Learning Illustration"
+              src="/images/chemistry-lab.jpeg"
+              alt="Dominion College Chemistry Laboratory and Science Practical Area"
               width={520}
               height={340}
-              className="w-full rounded-2xl border border-brand-border object-cover shadow-sm"
+              className="h-72 w-full rounded-2xl border border-brand-border object-cover shadow-sm"
             />
           </div>
         </div>

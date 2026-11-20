@@ -14,6 +14,16 @@ export const metadata: Metadata = {
   title: 'Admissions & Online Enquiry',
   description:
     'Learn about the admissions process for Day Care, KG 1–2, Nursery 1–2, Primary 1–5, Junior Secondary (JSS 1–3), and Senior Secondary (SSS 1–3) at Dominion College, Oba-Ile, Akure.',
+  openGraph: {
+    images: [
+      {
+        url: '/images/secondary-school-front-view-2.jpeg',
+        width: 1200,
+        height: 800,
+        alt: 'Dominion College Secondary School Campus — Oba-Ile, Akure',
+      },
+    ],
+  },
 };
 
 export default async function AdmissionsPage() {
